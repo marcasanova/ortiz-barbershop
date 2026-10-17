@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SERVICES, type ServiceId } from "@/domain/services";
+import { Appear } from "@/components/ui/Appear";
 import { Button, focusRing } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
@@ -175,43 +176,46 @@ export function PublicBoard({ token }: { token: string }) {
         </div>
       ) : serviceId === null ? (
         <section className="pt-6" aria-labelledby="pick-service">
-          <StepLabel step={1} total={2} />
-          <h1
-            id="pick-service"
-            className="mt-1 font-display text-3xl uppercase text-text"
-          >
-            Elige corte
-          </h1>
-          <p className="mt-1 text-text-dim">
-            Luego verás las horas libres de cada día.
-          </p>
+          <Appear>
+            <StepLabel step={1} total={2} />
+            <h1
+              id="pick-service"
+              className="mt-1 font-display text-3xl uppercase text-text"
+            >
+              Elige corte
+            </h1>
+            <p className="mt-1 text-text-dim">
+              Luego verás las horas libres de cada día.
+            </p>
+          </Appear>
 
           <div className="mt-5 grid gap-3">
-            {SERVICE_IDS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setServiceId(id)}
-                className={`group flex min-h-20 items-center gap-4 rounded-2xl border border-brick-edge bg-brick p-4 text-left touch-manipulation transition-[border-color,box-shadow,transform] hover:border-neon-pink/70 hover:shadow-[0_0_18px_rgba(255,45,138,0.25)] active:scale-[0.99] ${focusRing}`}
-              >
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-neon-pink/40 text-neon-pink">
-                  <Icon name={SERVICE_ICON[id]} className="size-6" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-semibold">
-                    {SERVICES[id].label}
-                  </span>
-                  <span className="block text-sm text-text-dim">
-                    {SERVICES[id].durationMinutes} min
-                  </span>
-                </span>
-                <span
-                  aria-hidden
-                  className="text-2xl text-text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-neon-pink"
+            {SERVICE_IDS.map((id, index) => (
+              <Appear key={id} delayMs={index * 60}>
+                <button
+                  type="button"
+                  onClick={() => setServiceId(id)}
+                  className={`group flex min-h-20 w-full items-center gap-4 rounded-2xl border border-brick-edge bg-brick p-4 text-left touch-manipulation transition-[border-color,box-shadow,transform] hover:border-neon-pink/70 hover:shadow-[0_0_18px_rgba(255,45,138,0.25)] active:scale-[0.99] ${focusRing}`}
                 >
-                  ›
-                </span>
-              </button>
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-neon-pink/40 text-neon-pink">
+                    <Icon name={SERVICE_ICON[id]} className="size-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-semibold">
+                      {SERVICES[id].label}
+                    </span>
+                    <span className="block text-sm text-text-dim">
+                      {SERVICES[id].durationMinutes} min
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden
+                    className="text-2xl text-text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-neon-pink"
+                  >
+                    ›
+                  </span>
+                </button>
+              </Appear>
             ))}
           </div>
 
@@ -280,16 +284,17 @@ export function PublicBoard({ token }: { token: string }) {
                 <DayCardSkeleton />
               </>
             ) : null}
-            {board?.days.map((day) => (
-              <DayCard
-                key={day.date}
-                day={day}
-                disabled={stale}
-                hasMine={myBookings.some((booking) => booking.date === day.date)}
-                onPick={(startTime) =>
-                  setPicked({ date: day.date, startTime })
-                }
-              />
+            {board?.days.map((day, index) => (
+              <Appear key={day.date} delayMs={index * 60}>
+                <DayCard
+                  day={day}
+                  disabled={stale}
+                  hasMine={myBookings.some((booking) => booking.date === day.date)}
+                  onPick={(startTime) =>
+                    setPicked({ date: day.date, startTime })
+                  }
+                />
+              </Appear>
             ))}
           </div>
         </>

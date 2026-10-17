@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Appear } from "@/components/ui/Appear";
 import { Button, IconButton, focusRing } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
@@ -237,32 +238,37 @@ export function AdminApp() {
         }
       />
 
-      <LinkCard
-        link={link}
-        canGenerate={Boolean(week)}
-        ask={ask}
-        onGenerated={async (url) => {
-          setLink(url);
-          await load();
-        }}
-      />
+      <Appear>
+        <LinkCard
+          link={link}
+          canGenerate={Boolean(week)}
+          ask={ask}
+          onGenerated={async (url) => {
+            setLink(url);
+            await load();
+          }}
+        />
+      </Appear>
 
       {!week ? (
-        <Card className="text-center">
-          <p className="font-display text-xl uppercase">Sin semana</p>
-          <p className="mt-1 text-text-dim">
-            Crea la semana y luego añade los días que cortas.
-          </p>
-          <Button
-            className="mt-4 w-full"
-            loading={creating}
-            onClick={() => void createWeek()}
-          >
-            Crear semana
-          </Button>
-        </Card>
+        <Appear delayMs={60}>
+          <Card className="text-center">
+            <p className="font-display text-xl uppercase">Sin semana</p>
+            <p className="mt-1 text-text-dim">
+              Crea la semana y luego añade los días que cortas.
+            </p>
+            <Button
+              className="mt-4 w-full"
+              loading={creating}
+              onClick={() => void createWeek()}
+            >
+              Crear semana
+            </Button>
+          </Card>
+        </Appear>
       ) : (
         <>
+          <Appear delayMs={60}>
           <section aria-labelledby="week-title">
             <div className="flex items-baseline justify-between">
               <h1
@@ -308,15 +314,17 @@ export function AdminApp() {
               </Card>
             )}
           </section>
+          </Appear>
 
-          {week.days.map((day) => (
-            <DayEditor
-              key={day.date}
-              day={day}
-              onSave={saveDay}
-              onRemove={() => void removeDay(day)}
-              onCancelBooking={(booking) => void cancelBooking(booking)}
-            />
+          {week.days.map((day, index) => (
+            <Appear key={day.date} delayMs={120 + index * 60}>
+              <DayEditor
+                day={day}
+                onSave={saveDay}
+                onRemove={() => void removeDay(day)}
+                onCancelBooking={(booking) => void cancelBooking(booking)}
+              />
+            </Appear>
           ))}
 
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brick-edge/70 bg-night/90 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
@@ -374,13 +382,16 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6 pb-[max(4rem,env(safe-area-inset-bottom))]">
-      <Header compact />
-      <h1 className="mt-2 text-center font-display text-2xl uppercase">
-        Entrar
-      </h1>
-      <p className="mt-1 text-center text-sm text-text-dim">
-        Solo Raúl. Escribe el PIN.
-      </p>
+      <Appear>
+        <Header compact />
+        <h1 className="mt-2 text-center font-display text-2xl uppercase">
+          Entrar
+        </h1>
+        <p className="mt-1 text-center text-sm text-text-dim">
+          Solo Raúl. Escribe el PIN.
+        </p>
+      </Appear>
+      <Appear delayMs={80}>
       <form className="mt-6 flex flex-col gap-3" onSubmit={login}>
         <label htmlFor="pin" className="sr-only">
           PIN
@@ -412,6 +423,7 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
           Entrar
         </Button>
       </form>
+      </Appear>
     </main>
   );
 }
