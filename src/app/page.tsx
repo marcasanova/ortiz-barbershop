@@ -2,11 +2,12 @@ import { Header } from "@/components/ui/Header";
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-lg flex-col">
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center px-6 pb-16 text-center">
       <Header />
-      <p className="px-6 pb-10 text-center text-text-dim">
-        Si Raúl te ha pasado el enlace, ábrelo desde WhatsApp. No hay reserva
-        sin ese enlace.
+      <h1 className="mt-2 font-display text-2xl uppercase">Reservas con Raúl</h1>
+      <p className="mt-2 text-text-dim">
+        Abre el enlace que Raúl ha pasado por WhatsApp. Sin ese enlace no se
+        puede reservar.
       </p>
     </main>
   );

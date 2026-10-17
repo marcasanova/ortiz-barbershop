@@ -115,7 +115,7 @@ export function DatePicker({
             </div>
           }
           footer={
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 className={pickerFooterAccentClass}

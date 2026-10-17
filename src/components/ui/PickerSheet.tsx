@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Sheet } from "./Sheet";
 
 export const pickerTriggerClass =
   "flex min-h-12 w-full touch-manipulation items-center justify-between gap-3 rounded-xl border border-brick-edge bg-night px-3 text-left text-base text-text outline-none focus:border-neon-cyan";
@@ -39,49 +40,22 @@ export function PickerSheet({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onCloseRef.current();
-      }
-    }
-
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <button
-        type="button"
-        className="absolute inset-0 bg-night/80"
-        aria-label="Cerrar"
-        onClick={onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={ariaLabel}
-        className="relative z-10 w-full max-w-md rounded-t-3xl border border-brick-edge bg-brick px-3 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-2xl sm:p-4"
-      >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-brick-edge sm:hidden" />
-        {header ?? (
-          <p className="text-center font-display text-base uppercase text-text">
-            {title}
-          </p>
-        )}
-        {children}
-        {footer}
-      </div>
-    </div>
+    <Sheet
+      ariaLabel={ariaLabel}
+      onClose={onClose}
+      footer={footer}
+      header={
+        <div className="px-4 pt-2">
+          {header ?? (
+            <p className="text-center font-display text-base uppercase text-text">
+              {title}
+            </p>
+          )}
+        </div>
+      }
+    >
+      <div className="-mx-1">{children}</div>
+    </Sheet>
   );
 }
