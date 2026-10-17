@@ -37,8 +37,8 @@ export function TopBar({
           priority
         />
         <div className="min-w-0 flex-1 leading-none">
-          <p className="font-display text-xl uppercase text-neon-pink [text-shadow:0_0_10px_rgba(255,45,138,0.45)]">
-            Ortiz
+          <p className="font-display text-base uppercase leading-none text-neon-pink [text-shadow:0_0_10px_rgba(255,45,138,0.45)] sm:text-xl">
+            Ortiz Barbershop
           </p>
           {subtitle ? (
             <p className="mt-0.5 truncate text-xs text-text-dim">{subtitle}</p>
