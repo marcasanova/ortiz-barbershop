@@ -8,6 +8,7 @@ import {
   parseClock,
   snapClock,
 } from "@/lib/clock";
+import { Icon } from "./Icon";
 import {
   PickerSheet,
   pickerFooterAccentClass,
@@ -58,9 +59,7 @@ export function TimePicker({
         className={pickerTriggerClass}
       >
         <span className="tabular-hours">{value || "—"}</span>
-        <span className="text-lg text-neon-cyan" aria-hidden>
-          ▾
-        </span>
+        <Icon name="chevronDown" className="size-5 shrink-0 text-neon-cyan" />
       </button>
 
       {open ? (

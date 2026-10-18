@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { focusRing } from "./Button";
+import { Icon, type IconName } from "./Icon";
 
 export function Segmented<T extends string>({
   label,
@@ -11,7 +12,7 @@ export function Segmented<T extends string>({
 }: {
   label: string;
   value: T | null;
-  options: { value: T; label: string; hint?: string }[];
+  options: { value: T; label: string; hint?: string; icon?: IconName }[];
   onChange: (value: T) => void;
 }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -57,6 +58,9 @@ export function Segmented<T extends string>({
                 : "text-text-dim hover:text-text"
             }`}
           >
+            {option.icon ? (
+              <Icon name={option.icon} className="size-5 shrink-0" />
+            ) : null}
             {option.label}
             {option.hint ? (
               <span className="font-normal opacity-80">{option.hint}</span>

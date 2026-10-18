@@ -321,7 +321,7 @@ begin
       public_token = null
   where is_active;
 
-  v_token := replace(gen_random_uuid()::text, '-', '');
+  v_token := encode(gen_random_bytes(4), 'hex');
 
   update public.weeks
   set is_active = true,

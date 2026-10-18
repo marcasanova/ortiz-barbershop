@@ -1,6 +1,5 @@
--- gen_random_bytes vive en la extensión pgcrypto (esquema extensions).
--- rotate_public_link tenía search_path = public y no lo encontraba.
--- Pegar en el SQL Editor de Supabase y Run.
+-- Token público de 8 hex. gen_random_bytes está en pgcrypto (esquema extensions).
+-- Pegar en el SQL Editor de Supabase y Run. Luego Raúl genera un enlace nuevo.
 
 create or replace function public.rotate_public_link(p_week_id uuid)
 returns text
@@ -20,7 +19,7 @@ begin
       public_token = null
   where is_active;
 
-  v_token := replace(gen_random_uuid()::text, '-', '');
+  v_token := encode(gen_random_bytes(4), 'hex');
 
   update public.weeks
   set is_active = true,

@@ -10,6 +10,7 @@ import {
   todayIso,
 } from "@/lib/calendar";
 import { formatDay } from "@/lib/format";
+import { Icon } from "./Icon";
 import {
   PickerSheet,
   pickerCellClass,
@@ -78,9 +79,7 @@ export function DatePicker({
         <span className={value ? "first-letter:uppercase" : "text-mortar"}>
           {value ? formatDay(value) : "Toca para elegir el día"}
         </span>
-        <span className="text-lg text-neon-cyan" aria-hidden>
-          ▾
-        </span>
+        <Icon name="chevronDown" className="size-5 shrink-0 text-neon-cyan" />
       </button>
 
       {open ? (
@@ -97,7 +96,7 @@ export function DatePicker({
                   setCursor(shiftMonth(cursor.year, cursor.month, -1))
                 }
               >
-                ‹
+                <Icon name="chevronLeft" />
               </button>
               <p className="font-display text-base uppercase text-text">
                 {monthLabel(cursor.year, cursor.month)}
@@ -110,7 +109,7 @@ export function DatePicker({
                   setCursor(shiftMonth(cursor.year, cursor.month, 1))
                 }
               >
-                ›
+                <Icon name="chevronRight" />
               </button>
             </div>
           }

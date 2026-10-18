@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { SERVICES, type ServiceId } from "@/domain/services";
 import { Appear } from "@/components/ui/Appear";
@@ -28,15 +29,8 @@ import {
   formatDayMonth,
   formatWeekday,
 } from "@/lib/format";
+import { buildDaySlots, type PublicBooking } from "@/lib/day-slots";
 import { useBoardRealtime } from "@/lib/use-board-realtime";
-
-type PublicBooking = {
-  id: string;
-  clientName: string;
-  serviceId: string;
-  startTime: string;
-  endTime: string;
-};
 
 type PublicDay = {
   date: string;
@@ -62,9 +56,23 @@ const ERROR_COPY: Record<string, string> = {
 };
 
 const SERVICE_IDS = Object.keys(SERVICES) as ServiceId[];
-const SERVICE_ICON: Record<ServiceId, IconName> = {
-  corte: "scissors",
-  corte_barba: "razor",
+// Cada servicio tiene un único acento neón (branding §3: uno por bloque).
+const SERVICE_STYLE: Record<
+  ServiceId,
+  { art: string; icon: IconName; card: string; arrow: string }
+> = {
+  corte: {
+    art: "/brand/servicios/corte.svg",
+    icon: "scissors",
+    card: "hover:border-neon-lime/60 hover:shadow-[0_0_22px_rgba(200,255,58,0.18)] focus-visible:border-neon-lime/60",
+    arrow: "group-hover:text-neon-lime",
+  },
+  corte_barba: {
+    art: "/brand/servicios/corte-barba.svg",
+    icon: "scissorsRazor",
+    card: "hover:border-neon-cyan/60 hover:shadow-[0_0_22px_rgba(62,224,255,0.18)] focus-visible:border-neon-cyan/60",
+    arrow: "group-hover:text-neon-cyan",
+  },
 };
 
 function shortService(id: string) {
@@ -195,25 +203,30 @@ export function PublicBoard({ token }: { token: string }) {
                 <button
                   type="button"
                   onClick={() => setServiceId(id)}
-                  className={`group flex min-h-20 w-full items-center gap-4 rounded-2xl border border-brick-edge bg-brick p-4 text-left touch-manipulation transition-[border-color,box-shadow,transform] hover:border-neon-pink/70 hover:shadow-[0_0_18px_rgba(255,45,138,0.25)] active:scale-[0.99] ${focusRing}`}
+                  className={`group flex w-full items-center gap-4 rounded-2xl border border-brick-edge bg-brick p-3 pr-4 text-left touch-manipulation transition-[border-color,box-shadow,transform] active:scale-[0.99] ${focusRing} ${SERVICE_STYLE[id].card}`}
                 >
-                  <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-neon-pink/40 text-neon-pink">
-                    <Icon name={SERVICE_ICON[id]} className="size-6" />
-                  </span>
+                  <Image
+                    src={SERVICE_STYLE[id].art}
+                    alt=""
+                    width={88}
+                    height={88}
+                    unoptimized
+                    priority
+                    className="size-[88px] shrink-0 rounded-[20px] border border-brick-edge"
+                  />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-lg font-semibold">
+                    <span className="block text-lg font-semibold leading-tight">
                       {SERVICES[id].label}
                     </span>
-                    <span className="block text-sm text-text-dim">
+                    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-brick-edge px-2.5 py-1 text-xs text-text-dim">
+                      <Icon name="clock" className="size-3.5" />
                       {SERVICES[id].durationMinutes} min
                     </span>
                   </span>
-                  <span
-                    aria-hidden
-                    className="text-2xl text-text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-neon-pink"
-                  >
-                    ›
-                  </span>
+                  <Icon
+                    name="chevronRight"
+                    className={`size-5 shrink-0 text-text-dim transition-[color,transform] group-hover:translate-x-0.5 ${SERVICE_STYLE[id].arrow}`}
+                  />
                 </button>
               </Appear>
             ))}
@@ -244,6 +257,7 @@ export function PublicBoard({ token }: { token: string }) {
                 value: id,
                 label: SERVICES[id].label,
                 hint: `${SERVICES[id].durationMinutes}′`,
+                icon: SERVICE_STYLE[id].icon,
               }))}
             />
           </div>
@@ -355,8 +369,8 @@ function MyBookings({
           key={booking.id}
           className="animate-flash-lime flex items-center gap-3 rounded-2xl border border-neon-lime/60 bg-brick p-4"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neon-lime/15 text-neon-lime">
-            <Icon name="check" />
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-neon-lime/40 bg-night text-neon-lime">
+            <Icon name="check" glow />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-neon-lime">
@@ -400,6 +414,8 @@ function DayCard({
 }) {
   const free = day.availableStarts.length;
   const weekday = formatWeekday(day.date);
+  // Con hora propia ese día solo se ve quién va: no hay huecos que coger.
+  const slots = buildDaySlots(hasMine ? [] : day.availableStarts, day.bookings);
 
   return (
     <section
@@ -446,68 +462,68 @@ function DayCard({
         <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
           No queda hueco para este corte.
         </p>
-      ) : (
-        <div className="mt-4 grid grid-cols-3 gap-2 min-[360px]:grid-cols-4">
-          {day.availableStarts.map((start) => (
-            <button
-              key={start}
-              type="button"
-              disabled={disabled}
-              aria-label={`Reservar ${weekday} a las ${start}`}
-              onClick={() => onPick(start)}
-              className={`min-h-12 rounded-xl border border-neon-cyan/50 bg-neon-cyan/[0.04] text-base font-semibold text-neon-cyan tabular-hours touch-manipulation transition-[background-color,box-shadow,transform] hover:bg-neon-cyan/10 hover:shadow-[0_0_12px_rgba(62,224,255,0.25)] active:scale-95 disabled:opacity-50 ${focusRing}`}
-            >
-              {start}
-            </button>
-          ))}
-        </div>
-      )}
+      ) : null}
 
-      {day.bookings.length > 0 ? (
-        <details className="group mt-4 border-t border-brick-edge pt-3">
-          <summary
-            className={`-mx-1 flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg px-1 text-sm text-text-dim touch-manipulation [&::-webkit-details-marker]:hidden ${focusRing}`}
-          >
-            <span>
-              {day.bookings.length === 1
-                ? "1 apuntado"
-                : `${day.bookings.length} apuntados`}
-            </span>
-            <span
-              aria-hidden
-              className="text-lg transition-transform group-open:rotate-90"
-            >
-              ›
-            </span>
-          </summary>
-          <ul className="mt-1 divide-y divide-brick-edge/60">
-            {day.bookings.map((booking) => {
+      {slots.length > 0 ? (
+        <div className="mt-4 grid grid-cols-3 gap-2 min-[360px]:grid-cols-4">
+          {slots.map((slot) => {
+            if (slot.kind === "booked") {
+              const { booking } = slot;
               const mine = Boolean(getCancelToken(booking.id));
+              const detail = `${booking.startTime}–${booking.endTime}, ${mine ? "tu reserva" : booking.clientName}, ${shortService(booking.serviceId)}`;
               return (
-                <li
+                <div
                   key={booking.id}
-                  className="flex items-center gap-3 py-2.5 text-sm"
+                  role="img"
+                  aria-label={`Cogida: ${detail}`}
+                  title={detail}
+                  className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border bg-night px-1.5 leading-tight ${
+                    mine ? "border-neon-lime/60" : "border-brick-edge"
+                  }`}
                 >
-                  <span className="w-[5.5rem] shrink-0 tabular-hours text-text-dim">
-                    {booking.startTime}–{booking.endTime}
+                  <span className="text-[11px] tabular-hours text-text-dim">
+                    {booking.startTime}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-text">
-                    {booking.clientName}
+                  <span
+                    className={`w-full truncate text-center text-xs font-semibold ${
+                      mine ? "text-neon-lime" : "text-text"
+                    }`}
+                  >
+                    {mine ? "Tú" : booking.clientName}
                   </span>
-                  {mine ? (
-                    <span className="rounded-full bg-neon-lime/15 px-2 py-0.5 text-xs font-semibold text-neon-lime">
-                      Tú
-                    </span>
-                  ) : (
-                    <span className="text-xs text-text-dim">
-                      {shortService(booking.serviceId)}
-                    </span>
-                  )}
-                </li>
+                </div>
               );
-            })}
-          </ul>
-        </details>
+            }
+            return (
+              <button
+                key={slot.start}
+                type="button"
+                disabled={disabled}
+                aria-label={`Reservar ${weekday} a las ${slot.start}`}
+                onClick={() => onPick(slot.start)}
+                className={`min-h-12 rounded-xl border border-neon-cyan/50 bg-neon-cyan/[0.04] text-base font-semibold text-neon-cyan tabular-hours touch-manipulation transition-[background-color,box-shadow,transform] hover:bg-neon-cyan/10 hover:shadow-[0_0_12px_rgba(62,224,255,0.25)] active:scale-95 disabled:opacity-50 ${focusRing}`}
+              >
+                {slot.start}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {free > 0 && !hasMine && day.bookings.length > 0 ? (
+        <div
+          aria-hidden
+          className="mt-3 flex items-center gap-4 text-xs text-text-dim"
+        >
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 rounded-[4px] border border-neon-cyan/60" />
+            Libre
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 rounded-[4px] border border-brick-edge bg-night" />
+            Cogida
+          </span>
+        </div>
       ) : null}
     </section>
   );
@@ -581,8 +597,8 @@ function BookingSheet({
     return (
       <Sheet ariaLabel="Reserva hecha" onClose={() => void onBooked()}>
         <div className="flex flex-col items-center py-8 text-center">
-          <span className="animate-flash-lime flex size-16 items-center justify-center rounded-full bg-neon-lime text-on-neon">
-            <Icon name="check" className="size-8" />
+          <span className="animate-flash-lime flex size-20 items-center justify-center rounded-full border border-neon-lime/40 bg-night text-neon-lime">
+            <Icon name="star" glow className="size-10" />
           </span>
           <p className="mt-4 font-display text-2xl uppercase text-neon-lime">
             Estás apuntado

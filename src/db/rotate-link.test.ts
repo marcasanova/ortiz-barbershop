@@ -30,6 +30,8 @@ describe("rotate_public_link", () => {
 
     expect(error).toBeNull();
     expect(token).toEqual(expect.any(String));
+    expect(token).toHaveLength(8);
+    expect(token).toMatch(/^[a-f0-9]{8}$/);
     expect(token).not.toBe(fixture.token);
 
     const { data: week } = await fixture.supabase

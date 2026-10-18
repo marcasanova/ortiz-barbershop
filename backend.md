@@ -109,7 +109,7 @@ Sin cambio de idea. Borran la fila.
 
 ### `rotate_public_link(p_week_id)`
 
-Invalida la activa, asigna token con `gen_random_uuid()` (sin `gen_random_bytes`).
+Invalida la activa, asigna un `public_token` de 8 hex (`encode(gen_random_bytes(4), 'hex')`).
 
 ### `replace_day_windows(p_week_id, p_date, p_windows jsonb)`
 
