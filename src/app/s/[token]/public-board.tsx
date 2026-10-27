@@ -27,6 +27,7 @@ import {
 } from "@/lib/client-identity";
 import {
   capitalize,
+  serviceName,
   formatDay,
   formatDayMonth,
   formatWeekday,
@@ -87,9 +88,6 @@ const SERVICE_STYLE: Record<
   },
 };
 
-function shortService(id: string) {
-  return id === "corte_barba" ? "Corte + barba" : "Corte";
-}
 
 export function PublicBoard({ token }: { token: string }) {
   const toast = useToast();
@@ -393,7 +391,7 @@ export function PublicBoard({ token }: { token: string }) {
               onChange={setServiceId}
               options={SERVICE_IDS.map((id) => ({
                 value: id,
-                label: SERVICES[id].label,
+                label: SERVICES[id].shortLabel,
                 hint: `${SERVICES[id].durationMinutes}′`,
                 icon: SERVICE_STYLE[id].icon,
               }))}
@@ -547,7 +545,7 @@ function MyBookings({
               <span className="font-semibold text-text tabular-hours">
                 {booking.startTime}–{booking.endTime}
               </span>{" "}
-              · {shortService(booking.serviceId)}
+              · {serviceName(booking.serviceId)}
             </p>
           </div>
           <Button
@@ -651,7 +649,7 @@ function DayCard({
                     myBookingId,
                     pendingTargetIds,
                   });
-              const detail = `${booking.startTime}–${booking.endTime}, ${mine ? "tu reserva" : booking.clientName}, ${shortService(booking.serviceId)}`;
+              const detail = `${booking.startTime}–${booking.endTime}, ${mine ? "tu reserva" : booking.clientName}, ${serviceName(booking.serviceId)}`;
               const cellClass = `flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border bg-night px-1.5 leading-tight`;
               const label = (
                 <>
