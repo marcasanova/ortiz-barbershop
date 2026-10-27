@@ -31,17 +31,17 @@ describe("listAvailableStarts", () => {
     ).toEqual(everyTenMinutes("16:00", "19:30"));
   });
 
-  it("corta antes el último inicio si el corte dura 40 minutos", () => {
+  it("el corte atemporal vintage (1 h) empieza como tarde a las 19:00", () => {
     expect(
       listAvailableStarts({
         windowStart: "16:00",
         windowEnd: "20:00",
         durationMinutes: SERVICES.corte_barba.durationMinutes,
       }),
-    ).toEqual(everyTenMinutes("16:00", "19:20"));
+    ).toEqual(everyTenMinutes("16:00", "19:00"));
   });
 
-  it("omite inicios que pisan una reserva de 16:00–16:30 en un corte de 40", () => {
+  it("omite inicios que pisan una reserva de 16:00–16:30 en un corte de 1 h", () => {
     expect(
       listAvailableStarts({
         windowStart: "16:00",
@@ -49,7 +49,33 @@ describe("listAvailableStarts", () => {
         durationMinutes: SERVICES.corte_barba.durationMinutes,
         busy: [{ start: "16:00", end: "16:30" }],
       }),
-    ).toEqual(everyTenMinutes("16:30", "19:20"));
+    ).toEqual(everyTenMinutes("16:30", "19:00"));
+  });
+
+  it("un corte de 1 h no cabe en un hueco de 40 entre dos reservas", () => {
+    const starts = listAvailableStarts({
+      windowStart: "16:00",
+      windowEnd: "20:00",
+      durationMinutes: SERVICES.corte_barba.durationMinutes,
+      busy: [
+        { start: "16:00", end: "16:30" },
+        { start: "17:10", end: "20:00" },
+      ],
+    });
+    expect(starts).toEqual([]);
+  });
+
+  it("un corte de 1 h cabe justo en un hueco de 1 h", () => {
+    const starts = listAvailableStarts({
+      windowStart: "16:00",
+      windowEnd: "20:00",
+      durationMinutes: SERVICES.corte_barba.durationMinutes,
+      busy: [
+        { start: "16:00", end: "16:30" },
+        { start: "17:30", end: "20:00" },
+      ],
+    });
+    expect(starts).toEqual(["16:30"]);
   });
 
   it("no ofrece 19:40 para un corte de 30 minutos", () => {
@@ -147,6 +173,8 @@ describe("fitsAt", () => {
       { start: "19:00", end: "20:00" },
     ];
     expect(fitsAt({ windows: split, start: "19:20", durationMinutes: 40 })).toBe(true);
+    expect(fitsAt({ windows: split, start: "19:00", durationMinutes: 60 })).toBe(true);
+    expect(fitsAt({ windows: split, start: "19:10", durationMinutes: 60 })).toBe(false);
     expect(fitsAt({ windows: split, start: "17:40", durationMinutes: 30 })).toBe(false);
   });
 

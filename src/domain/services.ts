@@ -1,9 +1,12 @@
+// `corte_barba` es el id histórico del corte atemporal vintage: se mantiene
+// para no tocar la base de datos (FK de reservas y peticiones).
 export const SERVICES = {
-  corte: { id: "corte", label: "Corte", durationMinutes: 30 },
+  corte: { id: "corte", label: "Corte", shortLabel: "Corte", durationMinutes: 30 },
   corte_barba: {
     id: "corte_barba",
-    label: "Corte + barba",
-    durationMinutes: 40,
+    label: "Corte atemporal vintage",
+    shortLabel: "Vintage",
+    durationMinutes: 60,
   },
 } as const;
 

@@ -43,12 +43,12 @@ describe("requestState", () => {
     ).toBe("pending");
   });
 
-  it("un corte + barba no cabe en las 16:30 de Juan si Ana va a las 17:00", () => {
+  it("un corte vintage (1 h) no cabe en las 16:30 de Juan si Ana va a las 17:00", () => {
     expect(
       requestState({
         booking: juan,
         day: { windows, bookings: [juan, ana] },
-        durationMinutes: 40,
+        durationMinutes: 60,
         myBookingId: null,
         pendingTargetIds: [],
       }),
@@ -61,7 +61,7 @@ describe("requestState", () => {
       requestState({
         booking: juan,
         day: { windows, bookings: [juan, pegado] },
-        durationMinutes: 40,
+        durationMinutes: 60,
         myBookingId: "b-mio",
         pendingTargetIds: [],
       }),
