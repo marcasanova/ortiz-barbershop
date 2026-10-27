@@ -73,6 +73,12 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
   - Cualquiera con el enlace vigente ve nombre, horario y tipo de cada reserva.
 - **FR-B6: Cancelar**
   - Quien reservó, desde el mismo navegador. Raúl, cualquiera. Otro amigo, no.
+- **FR-B7: Pedir una hora cogida**
+  - Un amigo toca una hora cogida por otro y le envía una petición, siempre que su corte quepa en esa hora.
+  - El dueño la ve como una tarjeta al abrir el enlace (en tiempo real) y puede aceptar o decir que no.
+  - Si quien pide ya tiene hora ese día, aceptar es un **intercambio**: cada uno pasa a la hora del otro.
+  - Si quien pide no tiene hora ese día, aceptar es **ceder**: el dueño se queda sin hora. No se le asigna otra automáticamente; si quiere, reserva de nuevo a mano.
+  - Quien pide puede retirar la petición mientras esté pendiente. Si una de las dos reservas desaparece, la petición caduca.
 
 ---
 

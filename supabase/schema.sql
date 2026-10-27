@@ -389,3 +389,6 @@ grant execute on function public.cancel_booking_by_token(text, uuid, text) to se
 grant execute on function public.admin_cancel_booking(uuid) to service_role;
 grant execute on function public.rotate_public_link(uuid) to service_role;
 grant execute on function public.replace_day_windows(uuid, date, jsonb) to service_role;
+
+-- Después de este archivo: supabase/enable-realtime.sql y
+-- supabase/swap-requests.sql (peticiones de hora entre amigos).
