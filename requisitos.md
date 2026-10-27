@@ -24,7 +24,7 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
 ## 2. Decisiones cerradas
 
 - **Un solo enlace activo.** Solo existe un enlace de reservas válido a la vez. Al pulsar **Generar enlace**, el sistema crea una URL nueva y **destruye la anterior**. Editar días o franjas de la semana actual no cambia el enlace vigente.
-- **Dos cortes fijos.** `corte` dura **30 minutos**. `corte_barba` dura **40 minutos**. Raúl no configura duraciones en el MVP.
+- **Dos cortes fijos.** «Corte» (`corte`) dura **30 minutos**. «Corte atemporal vintage» (`corte_barba`) dura **1 hora**. Raúl no configura duraciones en el MVP.
 - **Franja, no huecos prehechos.** Raúl indica el tramo del día (por ejemplo sábado y domingo de 16:00 a 20:00). Las horas que ve el amigo se **calculan** según el corte elegido, la franja y las reservas que ya hay. Paso de reloj: **10 minutos**.
 - **Una reserva por persona y día.** El mismo navegador no puede reservar dos veces el mismo día.
 - **Un nombre por día.** En el mismo día no puede haber dos reservas con el mismo nombre. Aviso: *«Este nombre ya está apuntado este día. Cambia el nombre.»*
@@ -56,7 +56,7 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
   - El amigo abre el enlace de WhatsApp. Sin cuenta.
   - Enlace invalidado → aviso de que ya no está activo.
 - **FR-B2: Tipo de corte y cards por día**
-  - Primero elige el tipo de corte (un selector para toda la semana): Corte o Corte + barba.
+  - Primero elige el tipo de corte (un selector para toda la semana): Corte o Corte atemporal vintage.
   - En la misma pantalla, una card por día habilitado.
   - Dentro de la card:
     - **Libres:** inicios que caben enteros para **ese** corte (30 o 40 min) sin pisar otra reserva ni salirse de la franja.

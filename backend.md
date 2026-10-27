@@ -17,11 +17,11 @@ Igual que antes: `id`, `public_token` UNIQUE, `is_active`, timestamps. Índice �
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text` PK | `corte` o `corte_barba` |
+| `id` | `text` PK | `corte` o `corte_barba` (el corte atemporal vintage; se mantiene el id histórico) |
 | `label` | `text` | |
 | `duration_minutes` | `integer` | 30 o 40 |
 
-Filas semilla: `corte` / 30, `corte_barba` / 40.
+Filas semilla: `corte` / «Corte» / 30, `corte_barba` / «Corte atemporal vintage» / 60.
 
 ### 1.3 `availability_windows`
 
@@ -102,7 +102,7 @@ Ventanas de la semana activa + reservas (nombre, servicio, inicio, fin). Sin has
 | Función | Qué hace |
 |---|---|
 | `listAvailableStarts` | Inicios cada 10 min que caben en la franja, duran el corte y no pisan `busy` |
-| `SERVICES` / `getService` | `corte` 30 min, `corte_barba` 40 min |
+| `SERVICES` / `getService` | `corte` 30 min, `corte_barba` (Corte atemporal vintage) 60 min |
 | `normalizeName` / `normalizeNameKey` | Sin cambios |
 | `buildPublicUrl` | Sin cambios |
 | `hashSecret` | Sin cambios |

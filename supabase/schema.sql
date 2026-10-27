@@ -1,4 +1,4 @@
--- OrtizBarbershop — ventanas + dos cortes (30 / 40 min)
+-- OrtizBarbershop — ventanas + dos cortes (30 / 60 min)
 -- Zona: Europe/Madrid (date + time).
 
 create extension if not exists pgcrypto with schema extensions;
@@ -44,7 +44,7 @@ create table public.services (
 
 insert into public.services (id, label, duration_minutes) values
   ('corte', 'Corte', 30),
-  ('corte_barba', 'Corte + barba', 40);
+  ('corte_barba', 'Corte atemporal vintage', 60);
 
 create table public.availability_windows (
   id uuid primary key default gen_random_uuid(),

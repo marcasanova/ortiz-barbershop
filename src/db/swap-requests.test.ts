@@ -129,7 +129,7 @@ describe("swap_requests", () => {
       expect(rpcMessage(error)).toContain("NAME_TAKEN_THAT_DAY");
     });
 
-    it("rechaza pedir un corte + barba que no cabe en el hueco", async () => {
+    it("rechaza pedir un corte vintage (1 h) que no cabe en el hueco", async () => {
       await book("Ana", "17:00", "ana");
       const { error } = await ask({ serviceId: "corte_barba" });
       expect(rpcMessage(error)).toContain("REQUEST_DOES_NOT_FIT");
@@ -194,14 +194,14 @@ describe("swap_requests", () => {
     });
 
     it("intercambio: cada uno conserva la duración de su servicio", async () => {
-      // Juan 16:30 corte (30). Pablo 18:00 corte + barba (40) y pide corte + barba.
+      // Juan 16:30 corte (30). Pablo 18:00 vintage (1 h) y pide vintage.
       await book("Pablo", "18:00", "pablo", "corte_barba");
       const requestId = await askOk({ serviceId: "corte_barba" });
       await answer(requestId, true);
 
       const day = await bookingsOfDay();
       expect(day.map((b) => [b.client_name, b.start_time, b.end_time, b.service_id])).toEqual([
-        ["Pablo", "16:30:00", "17:10:00", "corte_barba"],
+        ["Pablo", "16:30:00", "17:30:00", "corte_barba"],
         ["Juan", "18:00:00", "18:30:00", "corte"],
       ]);
     });
