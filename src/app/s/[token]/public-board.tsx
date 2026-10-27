@@ -81,8 +81,8 @@ const SERVICE_STYLE: Record<
     arrow: "group-hover:text-neon-lime",
   },
   corte_barba: {
-    art: "/brand/servicios/corte-barba.svg",
-    icon: "scissorsRazor",
+    art: "/brand/servicios/corte-vintage.svg",
+    icon: "av",
     card: "hover:border-neon-cyan/60 hover:shadow-[0_0_22px_rgba(62,224,255,0.18)] focus-visible:border-neon-cyan/60",
     arrow: "group-hover:text-neon-cyan",
   },

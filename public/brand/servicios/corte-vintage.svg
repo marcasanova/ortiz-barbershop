@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 120 120" role="img" aria-label="AV de neón: corte atemporal vintage">
+  <defs>
+    <filter id="halo" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5"/>
+    </filter>
+    <g id="art">
+      <path d="M17 97 L43 29 L69 97 L95 37"/>
+      <path d="M29 70 L56 70"/>
+      <path d="M104 10 Q105.8 19.2 115 21 Q105.8 22.8 104 32 Q102.2 22.8 93 21 Q102.2 19.2 104 10 Z"/>
+    </g>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="#0b0706"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <use xlink:href="#art" href="#art" stroke="#3ee0ff" stroke-width="8" opacity="0.55" filter="url(#halo)"/>
+    <use xlink:href="#art" href="#art" stroke="#3ee0ff" stroke-width="4.4"/>
+    <use xlink:href="#art" href="#art" stroke="#d6f8ff" stroke-width="1.4"/>
+  </g>
+</svg>
