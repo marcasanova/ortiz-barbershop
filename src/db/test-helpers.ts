@@ -65,7 +65,12 @@ export async function deleteWeek(
   supabase: ReturnType<typeof createServiceClient>,
   weekId: string,
 ) {
-  await supabase.from("weeks").delete().eq("id", weekId);
+  // Si la limpieza falla, los datos que sobran rompen las siguientes
+  // ejecuciones (nombres únicos por día): mejor que falle a la vista.
+  const { error } = await supabase.from("weeks").delete().eq("id", weekId);
+  if (error) {
+    throw new Error(`No se pudo borrar la semana de test: ${error.message}`);
+  }
 }
 
 export async function bookSlot(params: {

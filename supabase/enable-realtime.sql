@@ -13,10 +13,11 @@ as $$
 declare
   v_week uuid;
 begin
-  if tg_table_name = 'bookings' then
-    v_week := coalesce(new.week_id, old.week_id);
-  else
-    v_week := coalesce(new.week_id, old.week_id);
+  v_week := coalesce(new.week_id, old.week_id);
+
+  -- La semana se está borrando: no hay tablero que avisar.
+  if not exists (select 1 from public.weeks w where w.id = v_week) then
+    return null;
   end if;
 
   insert into public.board_pulse (week_id, updated_at)
