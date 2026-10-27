@@ -3,9 +3,13 @@ import {
   getCancelToken,
   getClientKey,
   getDisplayName,
+  getRequestToken,
   removeCancelToken,
+  removeRequestToken,
   saveCancelToken,
+  saveRequestToken,
   setDisplayName,
+  takeRequestToken,
 } from "./client-identity";
 
 class MemoryStorage implements Storage {
@@ -74,5 +78,24 @@ describe("client-identity", () => {
     expect(getCancelToken("b1")).toBe("tok-1");
     removeCancelToken("b1");
     expect(getCancelToken("b1")).toBeUndefined();
+  });
+
+  it("guarda el token de una petición hasta que se resuelve", () => {
+    saveRequestToken("r1", "tok-r");
+    expect(getRequestToken("r1")).toBe("tok-r");
+    removeRequestToken("r1");
+    expect(getRequestToken("r1")).toBeUndefined();
+  });
+
+  it("al aceptarse, mueve el token de la petición a la reserva nueva", () => {
+    saveRequestToken("r1", "tok-r");
+    expect(takeRequestToken("r1", "b9")).toBe(true);
+    expect(getCancelToken("b9")).toBe("tok-r");
+    expect(getRequestToken("r1")).toBeUndefined();
+  });
+
+  it("no hace nada si la petición no tiene token en este navegador", () => {
+    expect(takeRequestToken("r-desconocida", "b9")).toBe(false);
+    expect(getCancelToken("b9")).toBeUndefined();
   });
 });
