@@ -586,8 +586,8 @@ function DayCard({
 }) {
   const free = day.availableStarts.length;
   const weekday = formatWeekday(day.date);
-  // Con hora propia ese día solo se ve quién va: no hay huecos que coger.
-  const slots = buildDaySlots(hasMine ? [] : day.availableStarts, day.bookings);
+  // Siempre se ve el día entero: horas libres y quién tiene cada una.
+  const slots = buildDaySlots(day.availableStarts, day.bookings);
 
   return (
     <section
@@ -628,7 +628,7 @@ function DayCard({
 
       {hasMine ? (
         <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
-          Ya tienes hora este día. Libera la tuya si quieres otra, o toca la de alguien para pedirle un cambio.
+          Ya tienes hora este día. Para cambiarla, toca la de alguien y pídele un cambio, o libera la tuya y elige otra libre.
         </p>
       ) : free === 0 ? (
         <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
@@ -711,6 +711,20 @@ function DayCard({
                 </div>
               );
             }
+            if (hasMine) {
+              // Visible pero sin reservar: solo se puede tener una hora al día.
+              return (
+                <div
+                  key={slot.start}
+                  role="img"
+                  aria-label={`Libre a las ${slot.start}. Ya tienes hora este día.`}
+                  title="Libre (ya tienes hora este día)"
+                  className="flex min-h-12 items-center justify-center rounded-xl border border-neon-cyan/20 text-base font-semibold text-neon-cyan/45 tabular-hours"
+                >
+                  {slot.start}
+                </div>
+              );
+            }
             return (
               <button
                 key={slot.start}
@@ -727,7 +741,7 @@ function DayCard({
         </div>
       ) : null}
 
-      {free > 0 && !hasMine && day.bookings.length > 0 ? (
+      {free > 0 && day.bookings.some((booking) => booking.id !== myBookingId) ? (
         <div
           aria-hidden
           className="mt-3 flex items-center gap-4 text-xs text-text-dim"
