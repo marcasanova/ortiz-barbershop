@@ -121,6 +121,7 @@ export type OutgoingRequest = {
   status: SwapRequestRow["status"];
   resolution: SwapRequestRow["resolution"];
   resultBookingId: string | null;
+  targetBookingId: string | null;
 };
 
 export function toSwapRequestDto(row: SwapRequestRow): IncomingRequest | OutgoingRequest {
@@ -148,5 +149,6 @@ export function toSwapRequestDto(row: SwapRequestRow): IncomingRequest | Outgoin
     status: row.status,
     resolution: row.resolution,
     resultBookingId: row.result_booking_id,
+    targetBookingId: row.target_booking_id,
   };
 }

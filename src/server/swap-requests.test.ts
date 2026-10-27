@@ -144,6 +144,7 @@ describe("toSwapRequestDto", () => {
       status: "accepted",
       resolution: "cede",
       resultBookingId: "b-new",
+      targetBookingId: "b-juan",
     });
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SERVICES, type ServiceId } from "@/domain/services";
 import { Appear } from "@/components/ui/Appear";
 import { Button, focusRing } from "@/components/ui/Button";
@@ -20,8 +20,10 @@ import {
   getClientKey,
   getDisplayName,
   removeCancelToken,
+  removeRequestToken,
   saveCancelToken,
   setDisplayName,
+  takeRequestToken,
 } from "@/lib/client-identity";
 import {
   capitalize,
@@ -30,7 +32,16 @@ import {
   formatWeekday,
 } from "@/lib/format";
 import { buildDaySlots, type PublicBooking } from "@/lib/day-slots";
+import { outgoingNotices, requestState } from "@/lib/swap-requests";
 import { useBoardRealtime } from "@/lib/use-board-realtime";
+import type { IncomingRequest, OutgoingRequest } from "@/server/swap-requests";
+import {
+  IncomingRequests,
+  OutgoingRequests,
+  REQUEST_ERROR_COPY,
+  RequestSheet,
+  type MySwapRequests,
+} from "./swap-requests-ui";
 
 type PublicDay = {
   date: string;
@@ -45,6 +56,7 @@ type PublicBoardData = {
 };
 
 type Picked = { date: string; startTime: string };
+type RequestTarget = { date: string; booking: PublicBooking };
 
 const ERROR_COPY: Record<string, string> = {
   NAME_TAKEN_THAT_DAY:
@@ -88,6 +100,40 @@ export function PublicBoard({ token }: { token: string }) {
   const [loadError, setLoadError] = useState(false);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [requests, setRequests] = useState<MySwapRequests>({ incoming: [], outgoing: [] });
+  const [requestTarget, setRequestTarget] = useState<RequestTarget | null>(null);
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  // Estado anterior de las peticiones enviadas, para avisar solo de cambios.
+  const outgoingSeen = useRef<Record<string, OutgoingRequest["status"]> | null>(null);
+
+  // Peticiones de este navegador. Si fallan, el tablero sigue funcionando.
+  const loadRequests = useCallback(async () => {
+    try {
+      const mine = await api<MySwapRequests>(`/api/s/${token}/requests/mine`, {
+        method: "POST",
+        body: JSON.stringify({ clientKey: getClientKey() }),
+      });
+
+      for (const request of mine.outgoing) {
+        if (request.status === "accepted" && request.resultBookingId) {
+          // Al ceder nace una reserva nueva: su token es el de la petición.
+          takeRequestToken(request.id, request.resultBookingId);
+        } else if (request.status !== "pending") {
+          removeRequestToken(request.id);
+        }
+      }
+
+      for (const notice of outgoingNotices(outgoingSeen.current, mine.outgoing)) {
+        toast(notice.message, notice.tone);
+      }
+      outgoingSeen.current = Object.fromEntries(
+        mine.outgoing.map((request) => [request.id, request.status]),
+      );
+      setRequests(mine);
+    } catch {
+      // Sin peticiones no se rompe nada: se reintenta en la siguiente carga.
+    }
+  }, [token, toast]);
 
   // Antes de elegir corte se carga igual (con "corte") para saber si el
   // enlace vale y qué días hay, pero no se pintan horas.
@@ -99,6 +145,7 @@ export function PublicBoard({ token }: { token: string }) {
       setBoard(data);
       setExpired(false);
       setLoadError(false);
+      await loadRequests();
     } catch (error) {
       if (error instanceof ApiError && error.code === "LINK_EXPIRED") {
         setExpired(true);
@@ -107,7 +154,7 @@ export function PublicBoard({ token }: { token: string }) {
       }
       setLoadError(true);
     }
-  }, [token, serviceId]);
+  }, [token, serviceId, loadRequests]);
 
   useEffect(() => {
     void (async () => {
@@ -152,6 +199,96 @@ export function PublicBoard({ token }: { token: string }) {
       setCancellingId(null);
     }
   }
+
+  async function answer(request: IncomingRequest, accept: boolean) {
+    const cancelToken = request.targetBookingId
+      ? getCancelToken(request.targetBookingId)
+      : undefined;
+    if (!cancelToken) {
+      toast("Esta hora no es tuya en este móvil.", "warn");
+      return;
+    }
+
+    if (accept) {
+      const ok = await ask(
+        request.swapStartTime
+          ? {
+              title: "¿Cambiar la hora?",
+              body: `Tú pasas a las ${request.swapStartTime} y ${request.requesterName} a las ${request.startTime}.`,
+              confirmLabel: "Cambiar",
+            }
+          : {
+              title: `¿Darle tus ${request.startTime}?`,
+              body: `Te quedas sin hora ese día. Si quieres otra, tendrás que elegirla tú en el tablero.`,
+              confirmLabel: "Dársela",
+            },
+      );
+      if (!ok) {
+        return;
+      }
+    }
+
+    setAnsweringId(request.id);
+    try {
+      await api(`/api/s/${token}/requests/${request.id}/respond`, {
+        method: "POST",
+        body: JSON.stringify({ cancelToken, accept }),
+      });
+      if (accept && !request.swapStartTime && request.targetBookingId) {
+        removeCancelToken(request.targetBookingId);
+      }
+      toast(
+        !accept
+          ? `Le has dicho que no a ${request.requesterName}`
+          : request.swapStartTime
+            ? `Hecho: ahora vas a las ${request.swapStartTime}`
+            : `Le has dado tus ${request.startTime} a ${request.requesterName}. Si quieres otra hora, elígela en el tablero.`,
+      );
+      await load();
+    } catch (caught) {
+      const code = caught instanceof ApiError ? caught.code : "INTERNAL_ERROR";
+      toast(REQUEST_ERROR_COPY[code] ?? "No se ha podido responder.", "warn");
+      await load();
+    } finally {
+      setAnsweringId(null);
+    }
+  }
+
+  async function withdraw(request: OutgoingRequest) {
+    setAnsweringId(request.id);
+    try {
+      await api(`/api/s/${token}/requests/${request.id}`, {
+        method: "DELETE",
+        body: JSON.stringify({ clientKey: getClientKey() }),
+      });
+      removeRequestToken(request.id);
+      toast("Petición retirada");
+      await load();
+    } catch {
+      toast("No se ha podido retirar.", "warn");
+    } finally {
+      setAnsweringId(null);
+    }
+  }
+
+  const pendingTargetIds = requests.outgoing
+    .filter((request) => request.status === "pending" && request.targetBookingId)
+    .map((request) => request.targetBookingId as string);
+
+  const requestBlocks = (
+    <>
+      <IncomingRequests
+        requests={requests.incoming}
+        busyId={answeringId}
+        onAnswer={(request, accept) => void answer(request, accept)}
+      />
+      <OutgoingRequests
+        requests={requests.outgoing}
+        busyId={answeringId}
+        onWithdraw={(request) => void withdraw(request)}
+      />
+    </>
+  );
 
   if (expired) {
     return (
@@ -240,6 +377,7 @@ export function PublicBoard({ token }: { token: string }) {
             </p>
           ) : null}
 
+          {requestBlocks}
           <MyBookings
             bookings={myBookings}
             cancellingId={cancellingId}
@@ -262,6 +400,7 @@ export function PublicBoard({ token }: { token: string }) {
             />
           </div>
 
+          {requestBlocks}
           <MyBookings
             bookings={myBookings}
             cancellingId={cancellingId}
@@ -304,9 +443,15 @@ export function PublicBoard({ token }: { token: string }) {
                   day={day}
                   disabled={stale}
                   hasMine={myBookings.some((booking) => booking.date === day.date)}
+                  durationMinutes={SERVICES[serviceId].durationMinutes}
+                  myBookingId={
+                    myBookings.find((booking) => booking.date === day.date)?.id ?? null
+                  }
+                  pendingTargetIds={pendingTargetIds}
                   onPick={(startTime) =>
                     setPicked({ date: day.date, startTime })
                   }
+                  onRequest={(booking) => setRequestTarget({ date: day.date, booking })}
                 />
               </Appear>
             ))}
@@ -330,6 +475,25 @@ export function PublicBoard({ token }: { token: string }) {
               ?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
           onSlotTaken={() => void load()}
+        />
+      ) : null}
+
+      {requestTarget && serviceId ? (
+        <RequestSheet
+          token={token}
+          date={requestTarget.date}
+          booking={requestTarget.booking}
+          serviceId={serviceId}
+          myStartTime={
+            myBookings.find((booking) => booking.date === requestTarget.date)?.startTime ?? null
+          }
+          onClose={() => setRequestTarget(null)}
+          onExpired={() => setExpired(true)}
+          onSent={async () => {
+            toast(`Petición enviada a ${requestTarget.booking.clientName}`);
+            setRequestTarget(null);
+            await load();
+          }}
         />
       ) : null}
 
@@ -405,12 +569,20 @@ function DayCard({
   day,
   disabled,
   hasMine,
+  durationMinutes,
+  myBookingId,
+  pendingTargetIds,
   onPick,
+  onRequest,
 }: {
   day: PublicDay;
   disabled: boolean;
   hasMine: boolean;
+  durationMinutes: number;
+  myBookingId: string | null;
+  pendingTargetIds: string[];
   onPick: (startTime: string) => void;
+  onRequest: (booking: PublicBooking) => void;
 }) {
   const free = day.availableStarts.length;
   const weekday = formatWeekday(day.date);
@@ -456,7 +628,7 @@ function DayCard({
 
       {hasMine ? (
         <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
-          Ya tienes hora este día. Libera la tuya si quieres otra.
+          Ya tienes hora este día. Libera la tuya si quieres otra, o toca la de alguien para pedirle un cambio.
         </p>
       ) : free === 0 ? (
         <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
@@ -470,17 +642,19 @@ function DayCard({
             if (slot.kind === "booked") {
               const { booking } = slot;
               const mine = Boolean(getCancelToken(booking.id));
+              const state = mine
+                ? "own"
+                : requestState({
+                    booking,
+                    day,
+                    durationMinutes,
+                    myBookingId,
+                    pendingTargetIds,
+                  });
               const detail = `${booking.startTime}–${booking.endTime}, ${mine ? "tu reserva" : booking.clientName}, ${shortService(booking.serviceId)}`;
-              return (
-                <div
-                  key={booking.id}
-                  role="img"
-                  aria-label={`Cogida: ${detail}`}
-                  title={detail}
-                  className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border bg-night px-1.5 leading-tight ${
-                    mine ? "border-neon-lime/60" : "border-brick-edge"
-                  }`}
-                >
+              const cellClass = `flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border bg-night px-1.5 leading-tight`;
+              const label = (
+                <>
                   <span className="text-[11px] tabular-hours text-text-dim">
                     {booking.startTime}
                   </span>
@@ -491,6 +665,49 @@ function DayCard({
                   >
                     {mine ? "Tú" : booking.clientName}
                   </span>
+                  {state === "pending" ? (
+                    <span className="text-[10px] text-neon-cyan">Pedida</span>
+                  ) : null}
+                </>
+              );
+
+              if (state === "ok") {
+                return (
+                  <button
+                    key={booking.id}
+                    type="button"
+                    disabled={disabled}
+                    aria-label={`Pedir a ${booking.clientName} su hora: ${detail}`}
+                    title={`Pedir a ${booking.clientName}`}
+                    onClick={() => onRequest(booking)}
+                    className={`${cellClass} border-dashed border-mortar touch-manipulation transition-[border-color,transform] hover:border-neon-cyan/60 active:scale-95 disabled:opacity-50 ${focusRing}`}
+                  >
+                    {label}
+                  </button>
+                );
+              }
+
+              return (
+                <div
+                  key={booking.id}
+                  role="img"
+                  aria-label={
+                    state === "no-fit"
+                      ? `Cogida: ${detail}. Tu corte no cabe en esta hora.`
+                      : state === "pending"
+                        ? `Cogida: ${detail}. Ya se la has pedido.`
+                        : `Cogida: ${detail}`
+                  }
+                  title={detail}
+                  className={`${cellClass} ${
+                    mine
+                      ? "border-neon-lime/60"
+                      : state === "pending"
+                        ? "border-neon-cyan/40"
+                        : "border-brick-edge"
+                  }`}
+                >
+                  {label}
                 </div>
               );
             }
@@ -520,8 +737,8 @@ function DayCard({
             Libre
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-[4px] border border-brick-edge bg-night" />
-            Cogida
+            <span className="size-3 rounded-[4px] border border-dashed border-mortar bg-night" />
+            Cogida (tócala para pedirla)
           </span>
         </div>
       ) : null}
