@@ -24,7 +24,7 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
 ## 2. Decisiones cerradas
 
 - **Un solo enlace activo.** Solo existe un enlace de reservas válido a la vez. Al pulsar **Generar enlace**, el sistema crea una URL nueva y **destruye la anterior**. Editar días o franjas de la semana actual no cambia el enlace vigente.
-- **Dos cortes fijos.** `corte` dura **30 minutos**. `corte_barba` dura **40 minutos**. Raúl no configura duraciones en el MVP.
+- **Dos cortes fijos.** «Corte» (`corte`) dura **30 minutos**. «Corte atemporal vintage» (`corte_barba`) dura **1 hora**. Raúl no configura duraciones en el MVP.
 - **Franja, no huecos prehechos.** Raúl indica el tramo del día (por ejemplo sábado y domingo de 16:00 a 20:00). Las horas que ve el amigo se **calculan** según el corte elegido, la franja y las reservas que ya hay. Paso de reloj: **10 minutos**.
 - **Una reserva por persona y día.** El mismo navegador no puede reservar dos veces el mismo día.
 - **Un nombre por día.** En el mismo día no puede haber dos reservas con el mismo nombre. Aviso: *«Este nombre ya está apuntado este día. Cambia el nombre.»*
@@ -56,7 +56,7 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
   - El amigo abre el enlace de WhatsApp. Sin cuenta.
   - Enlace invalidado → aviso de que ya no está activo.
 - **FR-B2: Tipo de corte y cards por día**
-  - Primero elige el tipo de corte (un selector para toda la semana): Corte o Corte + barba.
+  - Primero elige el tipo de corte (un selector para toda la semana): Corte o Corte atemporal vintage.
   - En la misma pantalla, una card por día habilitado.
   - Dentro de la card:
     - **Libres:** inicios que caben enteros para **ese** corte (30 o 40 min) sin pisar otra reserva ni salirse de la franja.
@@ -73,6 +73,12 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
   - Cualquiera con el enlace vigente ve nombre, horario y tipo de cada reserva.
 - **FR-B6: Cancelar**
   - Quien reservó, desde el mismo navegador. Raúl, cualquiera. Otro amigo, no.
+- **FR-B7: Pedir una hora cogida**
+  - Un amigo toca una hora cogida por otro y le envía una petición, siempre que su corte quepa en esa hora.
+  - El dueño la ve como una tarjeta al abrir el enlace (en tiempo real) y puede aceptar o decir que no.
+  - Si quien pide ya tiene hora ese día, aceptar es un **intercambio**: cada uno pasa a la hora del otro.
+  - Si quien pide no tiene hora ese día, aceptar es **ceder**: el dueño se queda sin hora. No se le asigna otra automáticamente; si quiere, reserva de nuevo a mano.
+  - Quien pide puede retirar la petición mientras esté pendiente. Si una de las dos reservas desaparece, la petición caduca.
 
 ---
 

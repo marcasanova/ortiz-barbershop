@@ -1,6 +1,7 @@
 const KEY = "ob_client_key";
 const NAME = "ob_display_name";
 const TOKENS = "ob_cancel_tokens";
+const REQUEST_TOKENS = "ob_request_tokens";
 
 function readStorage(): Storage | null {
   if (typeof window === "undefined") {
@@ -33,50 +34,64 @@ export function setDisplayName(name: string) {
   readStorage()?.setItem(NAME, name);
 }
 
-export function getCancelToken(bookingId: string): string | undefined {
-  const raw = readStorage()?.getItem(TOKENS);
+function readTokenMap(key: string): Record<string, string> {
+  const raw = readStorage()?.getItem(key);
   if (!raw) {
-    return undefined;
+    return {};
   }
 
   try {
-    const map = JSON.parse(raw) as Record<string, string>;
-    return map[bookingId];
+    return JSON.parse(raw) as Record<string, string>;
   } catch {
-    return undefined;
+    return {};
   }
+}
+
+function writeTokenMap(key: string, map: Record<string, string>) {
+  readStorage()?.setItem(key, JSON.stringify(map));
+}
+
+export function getCancelToken(bookingId: string): string | undefined {
+  return readTokenMap(TOKENS)[bookingId];
 }
 
 export function saveCancelToken(bookingId: string, token: string) {
-  const storage = readStorage();
-  if (!storage) {
-    return;
-  }
-
-  let map: Record<string, string> = {};
-  try {
-    map = JSON.parse(storage.getItem(TOKENS) ?? "{}") as Record<string, string>;
-  } catch {
-    map = {};
-  }
-
-  map[bookingId] = token;
-  storage.setItem(TOKENS, JSON.stringify(map));
+  writeTokenMap(TOKENS, { ...readTokenMap(TOKENS), [bookingId]: token });
 }
 
 export function removeCancelToken(bookingId: string) {
-  const storage = readStorage();
-  if (!storage) {
-    return;
-  }
-
-  let map: Record<string, string> = {};
-  try {
-    map = JSON.parse(storage.getItem(TOKENS) ?? "{}") as Record<string, string>;
-  } catch {
-    map = {};
-  }
-
+  const map = readTokenMap(TOKENS);
   delete map[bookingId];
-  storage.setItem(TOKENS, JSON.stringify(map));
+  writeTokenMap(TOKENS, map);
+}
+
+// Token de cancelación de la reserva que nacerá si aceptan una petición.
+// Vive bajo el id de la petición hasta que se resuelve.
+export function getRequestToken(requestId: string): string | undefined {
+  return readTokenMap(REQUEST_TOKENS)[requestId];
+}
+
+export function saveRequestToken(requestId: string, token: string) {
+  writeTokenMap(REQUEST_TOKENS, {
+    ...readTokenMap(REQUEST_TOKENS),
+    [requestId]: token,
+  });
+}
+
+export function removeRequestToken(requestId: string) {
+  const map = readTokenMap(REQUEST_TOKENS);
+  delete map[requestId];
+  writeTokenMap(REQUEST_TOKENS, map);
+}
+
+/** Pasa el token de la petición aceptada a la reserva nueva. */
+export function takeRequestToken(requestId: string, bookingId: string): boolean {
+  const token = getRequestToken(requestId);
+  if (!token) {
+    return false;
+  }
+
+  saveCancelToken(bookingId, token);
+  removeRequestToken(requestId);
+  return true;
 }

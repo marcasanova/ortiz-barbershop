@@ -8,6 +8,18 @@ export function formatDay(date: string) {
   });
 }
 
+function isServiceId(id: string): id is ServiceId {
+  return id in SERVICES;
+}
+
+/** Nombre del servicio; `short` para el selector, celdas y listas densas. */
+export function serviceName(id: string, variant: "full" | "short" = "full") {
+  if (!isServiceId(id)) {
+    return id;
+  }
+  return variant === "short" ? SERVICES[id].shortLabel : SERVICES[id].label;
+}
+
 export function serviceLabel(id: string) {
   if (id === "corte" || id === "corte_barba") {
     const service = SERVICES[id as ServiceId];

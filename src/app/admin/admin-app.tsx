@@ -20,6 +20,7 @@ import {
   formatDayMonth,
   formatDayShort,
   formatWeekday,
+  serviceName,
 } from "@/lib/format";
 import { useBoardRealtime } from "@/lib/use-board-realtime";
 
@@ -48,9 +49,6 @@ type AdminWeek = {
 
 type Ask = ReturnType<typeof useConfirm>["ask"];
 
-function shortService(id: string) {
-  return id === "corte_barba" ? "Corte + barba" : "Corte";
-}
 
 function windowsError(windows: WindowRow[]): string {
   if (windows.length === 0) {
@@ -644,7 +642,7 @@ function DayEditor({
                   {booking.clientName}
                 </span>
                 <span className="block text-xs text-text-dim">
-                  {shortService(booking.serviceId)}
+                  {serviceName(booking.serviceId)}
                 </span>
               </span>
               <IconButton

@@ -6,8 +6,14 @@ describe("services", () => {
     expect(SERVICES.corte.durationMinutes).toBe(30);
   });
 
-  it("el corte + barba dura 40 minutos", () => {
-    expect(SERVICES.corte_barba.durationMinutes).toBe(40);
+  it("el corte atemporal vintage dura una hora", () => {
+    expect(SERVICES.corte_barba.durationMinutes).toBe(60);
+    expect(SERVICES.corte_barba.label).toBe("Corte atemporal vintage");
+  });
+
+  it("cada servicio tiene un nombre corto para el selector y las celdas", () => {
+    expect(SERVICES.corte.shortLabel).toBe("Corte");
+    expect(SERVICES.corte_barba.shortLabel).toBe("Vintage");
   });
 
   it("devuelve el servicio por id", () => {

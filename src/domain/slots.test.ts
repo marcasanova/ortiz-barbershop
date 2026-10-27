@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SERVICES } from "./services";
-import { listAvailableStarts } from "./slots";
+import { fitsAt, listAvailableStarts } from "./slots";
 
 function everyTenMinutes(from: string, last: string): string[] {
   const [fromH, fromM] = from.split(":").map(Number);
@@ -31,17 +31,17 @@ describe("listAvailableStarts", () => {
     ).toEqual(everyTenMinutes("16:00", "19:30"));
   });
 
-  it("corta antes el último inicio si el corte dura 40 minutos", () => {
+  it("el corte atemporal vintage (1 h) empieza como tarde a las 19:00", () => {
     expect(
       listAvailableStarts({
         windowStart: "16:00",
         windowEnd: "20:00",
         durationMinutes: SERVICES.corte_barba.durationMinutes,
       }),
-    ).toEqual(everyTenMinutes("16:00", "19:20"));
+    ).toEqual(everyTenMinutes("16:00", "19:00"));
   });
 
-  it("omite inicios que pisan una reserva de 16:00–16:30 en un corte de 40", () => {
+  it("omite inicios que pisan una reserva de 16:00–16:30 en un corte de 1 h", () => {
     expect(
       listAvailableStarts({
         windowStart: "16:00",
@@ -49,7 +49,33 @@ describe("listAvailableStarts", () => {
         durationMinutes: SERVICES.corte_barba.durationMinutes,
         busy: [{ start: "16:00", end: "16:30" }],
       }),
-    ).toEqual(everyTenMinutes("16:30", "19:20"));
+    ).toEqual(everyTenMinutes("16:30", "19:00"));
+  });
+
+  it("un corte de 1 h no cabe en un hueco de 40 entre dos reservas", () => {
+    const starts = listAvailableStarts({
+      windowStart: "16:00",
+      windowEnd: "20:00",
+      durationMinutes: SERVICES.corte_barba.durationMinutes,
+      busy: [
+        { start: "16:00", end: "16:30" },
+        { start: "17:10", end: "20:00" },
+      ],
+    });
+    expect(starts).toEqual([]);
+  });
+
+  it("un corte de 1 h cabe justo en un hueco de 1 h", () => {
+    const starts = listAvailableStarts({
+      windowStart: "16:00",
+      windowEnd: "20:00",
+      durationMinutes: SERVICES.corte_barba.durationMinutes,
+      busy: [
+        { start: "16:00", end: "16:30" },
+        { start: "17:30", end: "20:00" },
+      ],
+    });
+    expect(starts).toEqual(["16:30"]);
   });
 
   it("no ofrece 19:40 para un corte de 30 minutos", () => {
@@ -91,5 +117,75 @@ describe("listAvailableStarts", () => {
         durationMinutes: 30,
       }),
     ).toThrow("INVALID_RANGE");
+  });
+});
+
+describe("fitsAt", () => {
+  const windows = [{ start: "16:00", end: "20:00" }];
+
+  it("cabe en una franja libre", () => {
+    expect(fitsAt({ windows, start: "16:30", durationMinutes: 30 })).toBe(true);
+  });
+
+  it("no cabe si se sale de la franja", () => {
+    expect(fitsAt({ windows, start: "19:40", durationMinutes: 30 })).toBe(false);
+    expect(fitsAt({ windows, start: "15:50", durationMinutes: 30 })).toBe(false);
+  });
+
+  it("no cabe si pisa otra reserva", () => {
+    expect(
+      fitsAt({
+        windows,
+        start: "16:10",
+        durationMinutes: 30,
+        busy: [{ start: "16:30", end: "17:00" }],
+      }),
+    ).toBe(false);
+  });
+
+  it("un corte + barba (40) no cabe en un hueco de 30 entre dos reservas", () => {
+    const busy = [
+      { start: "16:00", end: "16:30" },
+      { start: "16:30", end: "17:00" },
+      { start: "17:00", end: "17:30" },
+    ];
+    expect(
+      fitsAt({ windows, start: "16:30", durationMinutes: 40, busy, excludeIds: [] }),
+    ).toBe(false);
+  });
+
+  it("ignora las reservas excluidas (la del dueño al pedirle su hora)", () => {
+    const busy = [
+      { id: "owner", start: "16:30", end: "17:00" },
+      { id: "other", start: "17:00", end: "17:30" },
+    ];
+    expect(
+      fitsAt({ windows, start: "16:30", durationMinutes: 30, busy, excludeIds: ["owner"] }),
+    ).toBe(true);
+    expect(
+      fitsAt({ windows, start: "16:30", durationMinutes: 40, busy, excludeIds: ["owner"] }),
+    ).toBe(false);
+  });
+
+  it("vale con cualquiera de varias franjas del día", () => {
+    const split = [
+      { start: "16:00", end: "18:00" },
+      { start: "19:00", end: "20:00" },
+    ];
+    expect(fitsAt({ windows: split, start: "19:20", durationMinutes: 40 })).toBe(true);
+    expect(fitsAt({ windows: split, start: "19:00", durationMinutes: 60 })).toBe(true);
+    expect(fitsAt({ windows: split, start: "19:10", durationMinutes: 60 })).toBe(false);
+    expect(fitsAt({ windows: split, start: "17:40", durationMinutes: 30 })).toBe(false);
+  });
+
+  it("coincide con listAvailableStarts en un día libre", () => {
+    const starts = listAvailableStarts({
+      windowStart: "16:00",
+      windowEnd: "20:00",
+      durationMinutes: 40,
+    });
+    for (const start of everyTenMinutes("16:00", "19:50")) {
+      expect(fitsAt({ windows, start, durationMinutes: 40 })).toBe(starts.includes(start));
+    }
   });
 });

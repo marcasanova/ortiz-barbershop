@@ -17,11 +17,11 @@ Igual que antes: `id`, `public_token` UNIQUE, `is_active`, timestamps. Índice �
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `text` PK | `corte` o `corte_barba` |
+| `id` | `text` PK | `corte` o `corte_barba` (el corte atemporal vintage; se mantiene el id histórico) |
 | `label` | `text` | |
 | `duration_minutes` | `integer` | 30 o 40 |
 
-Filas semilla: `corte` / 30, `corte_barba` / 40.
+Filas semilla: `corte` / «Corte» / 30, `corte_barba` / «Corte atemporal vintage» / 60.
 
 ### 1.3 `availability_windows`
 
@@ -62,7 +62,27 @@ Solapes: en `book_slot`, `FOR UPDATE` de las reservas del día y rechazo si `[st
 
 Borrar una ventana cancela sus reservas (`CASCADE`).
 
-### 1.5 Vista `week_board`
+### 1.5 `swap_requests`
+
+Peticiones de hora entre amigos (FR-B7). Migración: [`supabase/swap-requests.sql`](supabase/swap-requests.sql).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` PK | |
+| `week_id` | `uuid` FK → `weeks` ON DELETE CASCADE | |
+| `target_booking_id` | `uuid` FK → `bookings` ON DELETE SET NULL | Hora pedida |
+| `requester_booking_id` | `uuid` FK → `bookings` ON DELETE SET NULL | Hora de quien pide ese día → intercambio |
+| `owner_name`, `slot_date`, `start_time`, `swap_start_time` | | Copia de lo pedido, para mostrar el resultado aunque la reserva desaparezca |
+| `service_id` | `text` FK → `services` | Servicio que quiere quien pide |
+| `requester_name`, `requester_key_hash`, `requester_cancel_token_hash` | | El token es el de la reserva que nace si le ceden la hora |
+| `status` | `text` | `pending` / `accepted` / `declined` / `cancelled` / `expired` |
+| `resolution` | `text` | `swap` / `cede` |
+| `result_booking_id` | `uuid` | Reserva de quien pidió tras aceptar |
+| `created_at`, `resolved_at` | `timestamptz` | |
+
+Índice único parcial: una petición pendiente por `(target_booking_id, requester_key_hash)`. Trigger `BEFORE DELETE` en `bookings`: las peticiones pendientes que tocan esa reserva pasan a `expired`.
+
+### 1.6 Vista `week_board`
 
 Ventanas de la semana activa + reservas (nombre, servicio, inicio, fin). Sin hashes. Los inicios libres no salen aquí; se calculan al servir `GET` con `service`.
 
@@ -82,7 +102,7 @@ Ventanas de la semana activa + reservas (nombre, servicio, inicio, fin). Sin has
 | Función | Qué hace |
 |---|---|
 | `listAvailableStarts` | Inicios cada 10 min que caben en la franja, duran el corte y no pisan `busy` |
-| `SERVICES` / `getService` | `corte` 30 min, `corte_barba` 40 min |
+| `SERVICES` / `getService` | `corte` 30 min, `corte_barba` (Corte atemporal vintage) 60 min |
 | `normalizeName` / `normalizeNameKey` | Sin cambios |
 | `buildPublicUrl` | Sin cambios |
 | `hashSecret` | Sin cambios |
@@ -115,11 +135,27 @@ Invalida la activa, asigna un `public_token` de 8 hex (`encode(gen_random_bytes(
 
 Sustituye las franjas de ese día. Las reservas de las ventanas borradas caen por `CASCADE`.
 
+### Peticiones de hora (`supabase/swap-requests.sql`)
+
+- `request_swap(p_token, p_target_booking_id, p_service_id, p_name, p_key_hash, p_cancel_token_hash)` comprueba:
+  - la semana activa → `LINK_EXPIRED`;
+  - que la reserva exista → `NOT_FOUND`;
+  - que no sea tuya → `CANNOT_REQUEST_OWN`;
+  - el nombre (solo si no tienes hora ese día) → `INVALID_NAME` / `NAME_TAKEN_THAT_DAY`;
+  - que tu servicio quepa en esa hora, y en un intercambio que el del dueño quepa en la tuya → `REQUEST_DOES_NOT_FIT`;
+  - que no la hayas pedido ya → `REQUEST_ALREADY_PENDING`.
+- `respond_swap(p_token, p_request_id, p_owner_cancel_token_hash, p_accept)`: solo el dueño (token de cancelación de la reserva pedida, si no `FORBIDDEN`) y solo si sigue pendiente (`REQUEST_NOT_PENDING`).
+  - Bloquea las reservas del día como `book_slot` y vuelve a comprobar que cabe (`REQUEST_DOES_NOT_FIT`).
+  - **Intercambio**: mueve las horas, y cada reserva conserva su id y sus tokens.
+  - **Ceder**: borra la reserva del dueño y crea la de quien pidió con su token. Las demás peticiones pendientes sobre esas reservas caducan.
+- `cancel_swap_request(p_token, p_request_id, p_key_hash)`: solo quien pidió.
+- `my_swap_requests(p_token, p_key_hash)`: recibidas (pendientes, sobre tus reservas) y enviadas, sin hashes.
+
 ---
 
 ## 5. Identidad en el navegador
 
-`client_key`, `display_name`, `cancel_tokens`. El servidor solo guarda hashes.
+`client_key`, `display_name`, `cancel_tokens`, `request_tokens`. El servidor solo guarda hashes. El token de una petición pasa a `cancel_tokens` cuando le ceden la hora.
 
 ---
 
@@ -196,6 +232,20 @@ Ya no hay `PUT /settings` ni rutas de `slots` sueltos.
 
 `{ cancelToken }`. `204` / `403` / `404`.
 
+#### Peticiones de hora
+
+- `POST /api/s/:token/requests` `{ targetBookingId, serviceId, name?, clientKey }` → `201 { request, cancelToken }`.
+- `POST /api/s/:token/requests/mine` `{ clientKey }` → `{ incoming, outgoing }`. Es POST para que la clave no vaya en la URL.
+- `POST /api/s/:token/requests/:id/respond` `{ cancelToken, accept }` → `{ request: { status, resolution, resultBookingId } }`.
+- `DELETE /api/s/:token/requests/:id` `{ clientKey }` → `204`.
+
+| HTTP | `error.code` |
+|---|---|
+| `400` | `INVALID_REQUEST` / `INVALID_NAME` / `INVALID_SERVICE` / `CANNOT_REQUEST_OWN` |
+| `403` | `FORBIDDEN` |
+| `404` | `LINK_EXPIRED` / `NOT_FOUND` |
+| `409` | `REQUEST_ALREADY_PENDING` / `REQUEST_NOT_PENDING` / `REQUEST_DOES_NOT_FIT` / `NAME_TAKEN_THAT_DAY` / `ALREADY_BOOKED_THAT_DAY` |
+
 ---
 
 ## 7. Tiempo real
@@ -215,4 +265,5 @@ Ya no hay `PUT /settings` ni rutas de `slots` sueltos.
 | FR-B3 / FR-B4 | `POST …/bookings` → `book_slot` |
 | FR-B5 | `week_board` |
 | FR-B6 | `DELETE` público / admin |
+| FR-B7 | `…/requests` → `request_swap` / `respond_swap` / `cancel_swap_request` / `my_swap_requests` |
 | NFR-3 | solape en `book_slot` + unicidades por día |

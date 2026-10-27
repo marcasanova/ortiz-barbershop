@@ -41,13 +41,12 @@ const glyphs = {
     <path d="M12 3.5l2.5 5.3 5.7.7-4.2 3.9 1.1 5.7L12 16.3l-5.1 2.8 1.1-5.7-4.2-3.9 5.7-.7z" />
   ),
   scissors,
-  scissorsRazor: (
+  // «AV» del corte atemporal vintage, con su estrella.
+  av: (
     <>
-      <g transform="translate(-0.8 -0.6) scale(0.64)">{scissors}</g>
-      <g transform="rotate(-45 15.5 15.5)">
-        <rect x="7" y="14.3" width="9" height="2.4" rx="1.2" />
-        <path d="M17.5 14.2h4.3a1.6 1.6 0 010 3.2h-4.3z" />
-      </g>
+      <path d="M2.5 20.5L8 6l5.5 14.5L18.5 8" />
+      <path d="M5 15h6" />
+      <path d="M20.5 2q.4 2.1 2.5 2.5q-2.1.4-2.5 2.5q-.4-2.1-2.5-2.5q2.1-.4 2.5-2.5z" />
     </>
   ),
 } satisfies Record<string, ReactNode>;

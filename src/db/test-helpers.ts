@@ -65,7 +65,12 @@ export async function deleteWeek(
   supabase: ReturnType<typeof createServiceClient>,
   weekId: string,
 ) {
-  await supabase.from("weeks").delete().eq("id", weekId);
+  // Si la limpieza falla, los datos que sobran rompen las siguientes
+  // ejecuciones (nombres únicos por día): mejor que falle a la vista.
+  const { error } = await supabase.from("weeks").delete().eq("id", weekId);
+  if (error) {
+    throw new Error(`No se pudo borrar la semana de test: ${error.message}`);
+  }
 }
 
 export async function bookSlot(params: {
@@ -91,4 +96,77 @@ export async function bookSlot(params: {
 
 export function rpcMessage(error: { message: string } | null) {
   return error?.message ?? "";
+}
+
+type ServiceClient = ReturnType<typeof createServiceClient>;
+
+export async function requestSwap(params: {
+  supabase: ServiceClient;
+  token: string;
+  targetBookingId: string;
+  serviceId: "corte" | "corte_barba";
+  name: string | null;
+  clientKey: string;
+  cancelToken: string;
+}) {
+  return params.supabase.rpc("request_swap", {
+    p_token: params.token,
+    p_target_booking_id: params.targetBookingId,
+    p_service_id: params.serviceId,
+    p_name: params.name,
+    p_key_hash: hashSecret(params.clientKey),
+    p_cancel_token_hash: hashSecret(params.cancelToken),
+  });
+}
+
+export async function respondSwap(params: {
+  supabase: ServiceClient;
+  token: string;
+  requestId: string;
+  ownerCancelToken: string;
+  accept: boolean;
+}) {
+  return params.supabase.rpc("respond_swap", {
+    p_token: params.token,
+    p_request_id: params.requestId,
+    p_owner_cancel_token_hash: hashSecret(params.ownerCancelToken),
+    p_accept: params.accept,
+  });
+}
+
+export async function cancelSwapRequest(params: {
+  supabase: ServiceClient;
+  token: string;
+  requestId: string;
+  clientKey: string;
+}) {
+  return params.supabase.rpc("cancel_swap_request", {
+    p_token: params.token,
+    p_request_id: params.requestId,
+    p_key_hash: hashSecret(params.clientKey),
+  });
+}
+
+export async function mySwapRequests(params: {
+  supabase: ServiceClient;
+  token: string;
+  clientKey: string;
+}) {
+  return params.supabase.rpc("my_swap_requests", {
+    p_token: params.token,
+    p_key_hash: hashSecret(params.clientKey),
+  });
+}
+
+export async function cancelBooking(params: {
+  supabase: ServiceClient;
+  token: string;
+  bookingId: string;
+  cancelToken: string;
+}) {
+  return params.supabase.rpc("cancel_booking_by_token", {
+    p_token: params.token,
+    p_booking_id: params.bookingId,
+    p_cancel_token_hash: hashSecret(params.cancelToken),
+  });
 }

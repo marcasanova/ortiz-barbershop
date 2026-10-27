@@ -48,7 +48,7 @@ describe("book_slot", () => {
     expect(count).toBe(1);
   });
 
-  it("rechaza un corte de 40 minutos que pisa uno de 30 con SLOT_TAKEN", async () => {
+  it("rechaza un corte vintage (1 h) que pisa uno de 30 con SLOT_TAKEN", async () => {
     await bookSlot({
       supabase: fixture.supabase,
       token: fixture.token,
@@ -74,7 +74,7 @@ describe("book_slot", () => {
     expect(rpcMessage(error)).toContain("SLOT_TAKEN");
   });
 
-  it("permite corte + barba a las 16:30 si el corte de 30 acaba a las 16:30", async () => {
+  it("permite el vintage a las 16:30 si el corte de 30 acaba a las 16:30, y dura 1 h", async () => {
     await bookSlot({
       supabase: fixture.supabase,
       token: fixture.token,
@@ -98,9 +98,46 @@ describe("book_slot", () => {
     });
 
     expect(error).toBeNull();
+    const { data } = await fixture.supabase
+      .from("bookings")
+      .select("end_time")
+      .eq("week_id", fixture.week.id)
+      .eq("client_name", "Luis")
+      .single();
+    expect(data?.end_time).toBe("17:30:00");
   });
 
-  it("rechaza corte + barba a las 19:30 porque no cabe en la franja", async () => {
+  it("permite el vintage a las 19:00, la última hora entera de la franja", async () => {
+    const { error } = await bookSlot({
+      supabase: fixture.supabase,
+      token: fixture.token,
+      serviceId: "corte_barba",
+      date: TEST_DATE,
+      startTime: "19:00",
+      name: "Marc",
+      clientKey: "client-a",
+      cancelToken: "cancel-a",
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("rechaza el vintage a las 19:10 porque la hora no cabe en la franja", async () => {
+    const { error } = await bookSlot({
+      supabase: fixture.supabase,
+      token: fixture.token,
+      serviceId: "corte_barba",
+      date: TEST_DATE,
+      startTime: "19:10",
+      name: "Marc",
+      clientKey: "client-a",
+      cancelToken: "cancel-a",
+    });
+
+    expect(rpcMessage(error)).toContain("SLOT_TAKEN");
+  });
+
+  it("rechaza el vintage a las 19:30 porque no cabe en la franja", async () => {
     const { error } = await bookSlot({
       supabase: fixture.supabase,
       token: fixture.token,

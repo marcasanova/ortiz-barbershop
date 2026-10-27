@@ -22,7 +22,7 @@ describe("buildPublicBoard", () => {
     expect(board.days[0].availableStarts).not.toContain("19:40");
   });
 
-  it("acota el último inicio a 19:20 para corte + barba", () => {
+  it("acota el último inicio a 19:00 para el corte atemporal vintage (1 h)", () => {
     const board = buildPublicBoard({
       service: SERVICES.corte_barba,
       windows: [
@@ -35,7 +35,8 @@ describe("buildPublicBoard", () => {
       bookings: [],
     });
 
-    expect(board.days[0].availableStarts.at(-1)).toBe("19:20");
+    expect(board.days[0].availableStarts.at(-1)).toBe("19:00");
+    expect(board.service.durationMinutes).toBe(60);
   });
 
   it("omite inicios que pisan una reserva de 16:00–16:30", () => {
@@ -63,6 +64,7 @@ describe("buildPublicBoard", () => {
     expect(board.days[0].availableStarts[0]).toBe("16:30");
     expect(board.days[0].availableStarts).not.toContain("16:00");
     expect(board.days[0].availableStarts).not.toContain("16:10");
+    expect(board.days[0].availableStarts.at(-1)).toBe("19:00");
     expect(board.days[0].bookings[0]).toEqual({
       id: "b1",
       clientName: "Marc",

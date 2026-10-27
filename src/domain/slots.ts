@@ -66,3 +66,39 @@ export function listAvailableStarts(params: {
 
   return starts;
 }
+
+export type BusyInterval = TimeInterval & { id?: string };
+
+/**
+ * ¿Cabe un corte que empieza en `start` y dura `durationMinutes`? Tiene que
+ * caber entero en alguna franja y no pisar ninguna reserva, salvo las de
+ * `excludeIds` (p. ej. la reserva del dueño cuando se le pide su hora).
+ */
+export function fitsAt(params: {
+  windows: TimeInterval[];
+  start: string;
+  durationMinutes: number;
+  busy?: BusyInterval[];
+  excludeIds?: string[];
+}): boolean {
+  const start = timeToMinutes(params.start);
+  const end = start + params.durationMinutes;
+  const excluded = new Set(params.excludeIds ?? []);
+
+  const insideWindow = params.windows.some(
+    (window) =>
+      timeToMinutes(window.start) <= start && end <= timeToMinutes(window.end),
+  );
+  if (!insideWindow) {
+    return false;
+  }
+
+  return !(params.busy ?? []).some(
+    (interval) =>
+      !(interval.id && excluded.has(interval.id)) &&
+      overlaps(start, end, {
+        start: timeToMinutes(interval.start),
+        end: timeToMinutes(interval.end),
+      }),
+  );
+}
