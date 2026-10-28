@@ -48,7 +48,7 @@ export function PickerSheet({
       header={
         <div className="px-4 pt-2">
           {header ?? (
-            <p className="text-center font-display text-base uppercase text-text">
+            <p className="text-center text-base font-semibold text-text">
               {title}
             </p>
           )}

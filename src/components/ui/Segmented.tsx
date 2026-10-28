@@ -27,7 +27,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="grid rounded-2xl border border-brick-edge bg-night p-1"
+      className="grid rounded-full border border-brick-edge bg-night p-1"
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       {options.map((option, index) => {
@@ -52,9 +52,9 @@ export function Segmented<T extends string>({
                 move(index, -1);
               }
             }}
-            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold touch-manipulation transition-colors ${focusRing} ${
+            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold touch-manipulation transition-colors ${focusRing} ${
               selected
-                ? "bg-neon-pink text-on-neon shadow-[0_0_14px_rgba(255,45,138,0.35)]"
+                ? "bg-neon-pink text-on-neon"
                 : "text-text-dim hover:text-text"
             }`}
           >

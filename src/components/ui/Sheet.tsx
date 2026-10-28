@@ -99,7 +99,7 @@ export function Sheet({
         aria-labelledby={title ? titleId : undefined}
         aria-label={title ? undefined : ariaLabel}
         tabIndex={-1}
-        className={`animate-sheet-up relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl border border-b-0 border-brick-edge bg-brick outline-none sm:rounded-3xl sm:border-b ${className}`}
+        className={`animate-sheet-up relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-sheet border border-b-0 border-brick-edge bg-brick outline-none sm:rounded-sheet sm:border-b ${className}`}
       >
         <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-brick-edge sm:hidden" />
         {header ??
@@ -107,7 +107,7 @@ export function Sheet({
             <div className="flex shrink-0 items-center justify-between gap-2 py-1 pr-2 pl-5">
               <h2
                 id={titleId}
-                className="font-display text-xl uppercase text-text"
+                className="text-lg font-semibold text-text"
               >
                 {title}
               </h2>
