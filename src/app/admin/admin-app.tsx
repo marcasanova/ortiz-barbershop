@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Appear } from "@/components/ui/Appear";
 import { Button, IconButton, focusRing } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
@@ -17,7 +16,7 @@ import { api, ApiError } from "@/lib/api";
 import {
   capitalize,
   formatDay,
-  formatDayMonth,
+  formatDayNumber,
   formatDayShort,
   formatWeekday,
   serviceName,
@@ -205,7 +204,7 @@ export function AdminApp() {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 px-4">
         <TopBar subtitle="Panel de Raúl" />
-        <Skeleton className="h-36 rounded-2xl" />
+        <Skeleton className="h-36 rounded-panel" />
         <DayCardSkeleton />
       </main>
     );
@@ -236,7 +235,6 @@ export function AdminApp() {
         }
       />
 
-      <Appear>
         <LinkCard
           link={link}
           canGenerate={Boolean(week)}
@@ -246,14 +244,12 @@ export function AdminApp() {
             await load();
           }}
         />
-      </Appear>
 
       {!week ? (
-        <Appear delayMs={60}>
           <Card className="text-center">
-            <p className="font-display text-xl uppercase">Sin semana</p>
+            <p className="text-lg font-semibold">Todavía no hay semana</p>
             <p className="mt-1 text-text-dim">
-              Crea la semana y luego añade los días que cortas.
+              Créala y añade los días que vas a cortar.
             </p>
             <Button
               className="mt-4 w-full"
@@ -263,22 +259,22 @@ export function AdminApp() {
               Crear semana
             </Button>
           </Card>
-        </Appear>
       ) : (
         <>
-          <Appear delayMs={60}>
           <section aria-labelledby="week-title">
             <div className="flex items-baseline justify-between">
               <h1
                 id="week-title"
-                className="font-display text-2xl uppercase"
+                className="font-display text-[40px] uppercase"
               >
                 Semana
               </h1>
               <p className="text-sm text-text-dim">
-                {totalBookings === 1
-                  ? "1 reserva"
-                  : `${totalBookings} reservas`}
+                {totalBookings === 0
+                  ? "Nadie apuntado aún"
+                  : totalBookings === 1
+                    ? "1 persona apuntada"
+                    : `${totalBookings} personas apuntadas`}
               </p>
             </div>
             {week.days.length > 0 ? (
@@ -306,23 +302,20 @@ export function AdminApp() {
                 ))}
               </nav>
             ) : (
-              <Card className="mt-3 text-center text-text-dim">
-                No hay días todavía. Pulsa{" "}
-                <span className="text-text">Añadir día</span> abajo.
-              </Card>
+              <p className="mt-3 text-text-dim">
+                Aún no hay días. Añade el primero con el botón de abajo.
+              </p>
             )}
           </section>
-          </Appear>
 
-          {week.days.map((day, index) => (
-            <Appear key={day.date} delayMs={120 + index * 60}>
+          {week.days.map((day) => (
               <DayEditor
+                key={day.date}
                 day={day}
                 onSave={saveDay}
                 onRemove={() => void removeDay(day)}
                 onCancelBooking={(booking) => void cancelBooking(booking)}
               />
-            </Appear>
           ))}
 
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brick-edge/70 bg-night/90 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
@@ -380,16 +373,13 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6 pb-[max(4rem,env(safe-area-inset-bottom))]">
-      <Appear>
         <Header compact />
-        <h1 className="mt-2 text-center font-display text-2xl uppercase">
-          Entrar
+        <h1 className="mt-4 text-center text-xl font-semibold">
+          Hola, Raúl
         </h1>
         <p className="mt-1 text-center text-sm text-text-dim">
-          Solo Raúl. Escribe el PIN.
+          Escribe tu PIN para abrir el panel.
         </p>
-      </Appear>
-      <Appear delayMs={80}>
       <form className="mt-6 flex flex-col gap-3" onSubmit={login}>
         <label htmlFor="pin" className="sr-only">
           PIN
@@ -421,7 +411,6 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
           Entrar
         </Button>
       </form>
-      </Appear>
     </main>
   );
 }
@@ -500,18 +489,18 @@ function LinkCard({
   return (
     <Card>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-display text-lg uppercase">Enlace</h2>
+        <h2 className="text-lg font-semibold">Enlace del grupo</h2>
         {link ? (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-neon-lime">
+          <span className="flex items-center gap-1.5 text-sm text-neon-lime">
             <span className="size-2 rounded-full bg-neon-lime shadow-[0_0_8px_rgba(200,255,58,0.8)]" />
-            Activo
+            Funciona
           </span>
         ) : null}
       </div>
 
       {link ? (
         <>
-          <div className="mt-3 flex items-center gap-1 rounded-xl border border-brick-edge bg-night pl-3">
+          <div className="mt-3 flex items-center gap-1 rounded-cell border border-brick-edge bg-night pl-3">
             <p className="min-w-0 flex-1 truncate text-sm text-neon-cyan">
               {link.replace(/^https?:\/\//, "")}
             </p>
@@ -527,7 +516,7 @@ function LinkCard({
             type="button"
             disabled={busy || !canGenerate}
             onClick={() => void generate()}
-            className={`mt-2 min-h-11 w-full rounded-xl text-sm text-neon-orange touch-manipulation hover:bg-neon-orange/10 disabled:opacity-50 ${focusRing}`}
+            className={`mt-2 min-h-11 w-full rounded-full text-sm text-neon-orange touch-manipulation hover:bg-neon-orange/10 disabled:opacity-50 ${focusRing}`}
           >
             {busy ? "Generando…" : "Generar enlace nuevo"}
           </button>
@@ -535,8 +524,8 @@ function LinkCard({
       ) : (
         <>
           <p className="mt-2 text-sm text-text-dim">
-            Aún no hay enlace. Genera uno y mándalo al grupo. Editar días luego
-            no lo cambia.
+            Todavía no hay enlace. Genéralo y mándalo al grupo; cambiar los días
+            después no lo rompe.
           </p>
           <Button
             className="mt-3 w-full"
@@ -602,23 +591,26 @@ function DayEditor({
     <section
       id={`dia-${day.date}`}
       aria-labelledby={`dia-${day.date}-t`}
-      className="scroll-mt-20 rounded-2xl border border-brick-edge bg-brick p-4"
+      className="scroll-mt-20 rounded-panel border border-brick-edge bg-brick p-4"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+      <div className="flex items-end gap-3">
+        <span aria-hidden className="font-display text-[56px] tabular-hours">
+          {formatDayNumber(day.date)}
+        </span>
+        <div className="min-w-0 flex-1 pb-1">
           <h2
             id={`dia-${day.date}-t`}
-            className="font-display text-2xl uppercase leading-none"
+            className="font-display text-[28px] uppercase"
           >
-            {formatWeekday(day.date)}{" "}
-            <span className="text-text-dim">{formatDayMonth(day.date)}</span>
+            {formatWeekday(day.date)}
+            <span className="sr-only"> {formatDayNumber(day.date)}</span>
           </h2>
-          <p className="mt-1.5 text-xs text-text-dim">
+          <p className="text-sm text-text-dim">
             {day.bookings.length === 0
               ? "Nadie apuntado"
               : day.bookings.length === 1
-                ? "1 apuntado"
-                : `${day.bookings.length} apuntados`}
+                ? "1 persona apuntada"
+                : `${day.bookings.length} personas apuntadas`}
           </p>
         </div>
         <IconButton
@@ -631,7 +623,7 @@ function DayEditor({
       </div>
 
       {day.bookings.length > 0 ? (
-        <ul className="mt-3 divide-y divide-brick-edge/60 rounded-xl bg-night px-3">
+        <ul className="mt-3 divide-y divide-brick-edge/60 border-y border-brick-edge/60">
           {day.bookings.map((booking) => (
             <li key={booking.id} className="flex items-center gap-3 py-1.5">
               <span className="w-[5.5rem] shrink-0 text-sm tabular-hours text-text-dim">
@@ -657,9 +649,7 @@ function DayEditor({
         </ul>
       ) : null}
 
-      <h3 className="mt-4 text-xs font-semibold uppercase tracking-wider text-text-dim">
-        Franjas
-      </h3>
+      <h3 className="mt-4 text-sm font-semibold text-text">Horario del día</h3>
       <div className="mt-2 space-y-2">
         {windows.map((window, index) => (
           <div
@@ -705,7 +695,7 @@ function DayEditor({
       </div>
 
       {dirty ? (
-        <div className="animate-fade-in mt-3 rounded-xl border border-neon-pink/40 bg-night p-3">
+        <div className="animate-fade-in mt-3 rounded-cell border border-neon-pink/40 bg-night p-3">
           {error ? (
             <p role="alert" className="text-sm text-neon-orange">
               {error}
