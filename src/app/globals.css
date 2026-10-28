@@ -29,7 +29,12 @@
   --color-text-dim: var(--text-dim);
   --color-on-neon: var(--on-neon);
   --font-sans: var(--font-geist-sans);
-  --font-display: var(--font-oswald);
+  --font-display: var(--font-big-shoulders);
+
+  /* Jerarquía de radios: hoja > panel del día > celda; botones en píldora. */
+  --radius-sheet: 20px;
+  --radius-panel: 14px;
+  --radius-cell: 10px;
 }
 
 html {
@@ -44,8 +49,17 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-oswald), var(--font-geist-sans), sans-serif;
-  letter-spacing: 0.06em;
+  font-family: var(--font-big-shoulders), var(--font-geist-sans), sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.font-sign {
+  font-family: var(--font-sign), var(--font-big-shoulders), sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .tabular-hours {
@@ -117,6 +131,35 @@ body {
   50% {
     opacity: 1;
   }
+}
+
+/* El único momento de entrada: el rótulo se enciende una vez (branding §7). */
+@keyframes sign-on {
+  0% {
+    opacity: 0.15;
+    text-shadow: none;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  20% {
+    opacity: 0.25;
+  }
+  32% {
+    opacity: 0.85;
+  }
+  40% {
+    opacity: 0.45;
+  }
+  60%,
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 14px rgba(255, 45, 138, 0.55);
+  }
+}
+
+.animate-sign-on {
+  animation: sign-on 900ms steps(1, end) 120ms both;
 }
 
 .animate-sheet-up {
