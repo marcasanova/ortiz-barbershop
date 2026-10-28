@@ -53,7 +53,7 @@ Paleta extraída del neón. Los tokens van a `globals.css` cuando se pinte la UI
 | `--night` | `#0b0706` | Fondo de página |
 | `--brick` | `#1c1210` | Cards, panel |
 | `--brick-edge` | `#3a241c` | Bordes |
-| `--mortar` | `#6a4a3a` | Texto secundario apagado |
+| `--mortar` | `#6a4a3a` | Solo trazos decorativos (bordes discontinuos, marcas). No llega a 4.5:1 sobre `--night`: nunca como texto |
 
 ### Neón
 
@@ -76,9 +76,10 @@ Paleta extraída del neón. Los tokens van a `globals.css` cuando se pinte la UI
 Reglas:
 
 - Un acento neón por bloque. No mezclar rosa + cian + lima en el mismo botón.
-- CTA de reservar: magenta. Huecos libres: cian. Confirmación: lima.
+- CTA de reservar: magenta. Huecos libres: cian. Confirmación y «tu hora»: lima. Petición que te hacen: cian. Liberar, cancelar y errores: naranja.
 - El glow (`box-shadow` / `text-shadow`) es suave. Si el texto deja de leerse, se quita el glow y se deja el color sólido.
 - Contraste de cuerpo y botones por encima de 4.5:1. El neón es adorno, no el único indicador de estado.
+- La paleta vive en `globals.css` y en `src/lib/tokens.ts`; `src/lib/contrast.test.ts` comprueba que coinciden y que cada pareja texto/fondo cumple 4.5:1.
 
 ---
 
@@ -88,8 +89,10 @@ El rótulo usa una sans condensada, extra-bold, mayúsculas, tracking abierto.
 
 En la app:
 
-- Display (títulos, “ORTIZ”): sans condensada, mayúsculas. Candidata: **Bebas Neue** o **Oswald**.
-- UI (botones, cards, formularios): sans legible. Se puede seguir con **Geist** del layout actual para cuerpo.
+- Display (títulos de pantalla y del día, hora grande en las hojas): **Big Shoulders**, condensada de rotulación, en mayúsculas.
+- Wordmark «ORTIZ» de la cabecera: **Big Shoulders Inline**, cuyo doble trazo recuerda al tubo de neón. Solo ahí: a tamaño pequeño no se lee.
+- UI (botones, listas, formularios): **Geist**, en minúscula de frase.
+- Mayúsculas solo en los títulos display. Nada de etiquetas pequeñas en mayúsculas espaciadas sobre los bloques.
 - Nunca script / cursiva para horas o nombres: en el móvil se lee mal.
 
 Jerarquía:
@@ -104,7 +107,9 @@ Jerarquía:
 
 Del logo: cinta, estrella, tubo redondeado, ladrillo.
 
-- Radios: 12–16 px en cards. Botones un poco más redondos que las cards.
+- Radios por jerarquía, no uno para todo: hojas inferiores 20 px, panel del día 14 px, celdas de hora 10 px, botones en píldora.
+- Lo que es tuyo o te piden va en una **franja lateral de color** (lima: tu hora; cian: te piden la tuya), no en otra tarjeta igual a las demás. Paneles solo para los días.
+- Frases en vez de metadatos: «Tienes hora el viernes 30 a las 17:00», no «VIERNES 30 · 17:00 · Corte».
 - Bordes: 1 px `--brick-edge`. El CTA puede llevar un borde magenta semitransparente.
 - Cards de día: fondo `--brick`, lista de horas en grid. Libre = cian. Ocupada = nombre + tramo en `--text-dim`.
 - Inputs: fondo más oscuro que la card, borde discreto, foco cian.
@@ -126,6 +131,7 @@ El JPG del logo ya trae ladrillo y lluvia. En la app:
 
 El neón sugiere un pulso lento, no un parpadeo de fiesta.
 
+- Un único momento de entrada: el wordmark «ORTIZ» se enciende al cargar (dos parpadeos) y se queda fijo. Sin animaciones de entrada por sección.
 - Hover de botón: brillo un poco más intenso.
 - Confirmar reserva: flash lima corto.
 - Nada de loops infinitos ni lluvia animada en el fondo: gasta batería y marearía.
