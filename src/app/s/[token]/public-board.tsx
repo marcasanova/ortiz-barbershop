@@ -390,6 +390,7 @@ export function PublicBoard({ token }: { token: string }) {
                 label: SERVICES[id].shortLabel,
                 hint: `${SERVICES[id].durationMinutes}′`,
                 icon: SERVICE_STYLE[id].icon,
+                spoken: `${SERVICES[id].label}, ${durationText(SERVICES[id].durationMinutes)}`,
               }))}
             />
           </div>

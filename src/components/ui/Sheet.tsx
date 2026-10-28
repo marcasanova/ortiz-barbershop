@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { IconButton } from "./Button";
 import { Icon } from "./Icon";
@@ -32,6 +32,11 @@ export function Sheet({
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  // Se lee al renderizar, antes de que `autoFocus` mueva el foco dentro de la
+  // hoja: así al cerrar se vuelve al botón que la abrió.
+  const [opener] = useState(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -40,7 +45,6 @@ export function Sheet({
   useEffect(() => {
     const self = Symbol("sheet");
     stack.push(self);
-    const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -81,9 +85,11 @@ export function Sheet({
       stack.splice(stack.indexOf(self), 1);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKey);
-      previousFocus?.focus?.();
+      if (opener?.isConnected) {
+        opener.focus();
+      }
     };
-  }, []);
+  }, [opener]);
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">

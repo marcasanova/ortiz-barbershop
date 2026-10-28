@@ -11,7 +11,8 @@ const geistSans = Geist({
 // Títulos: condensada de rotulación (branding §4).
 const bigShoulders = Big_Shoulders({
   variable: "--font-big-shoulders",
-  subsets: ["latin", "latin-ext"],
+  // El juego latino ya trae á, é, í, ó, ú, ñ, ¿ y ¡; latin-ext se descargaba sin usarse.
+  subsets: ["latin"],
   weight: ["700", "800"],
 });
 

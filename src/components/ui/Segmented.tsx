@@ -12,7 +12,8 @@ export function Segmented<T extends string>({
 }: {
   label: string;
   value: T | null;
-  options: { value: T; label: string; hint?: string; icon?: IconName }[];
+    // `spoken`: nombre completo para lectores de pantalla (p. ej. «Corte, 30 minutos»).
+  options: { value: T; label: string; hint?: string; icon?: IconName; spoken?: string }[];
   onChange: (value: T) => void;
 }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -41,6 +42,7 @@ export function Segmented<T extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={option.spoken}
             tabIndex={selected || (value === null && index === 0) ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => {
@@ -63,7 +65,10 @@ export function Segmented<T extends string>({
             ) : null}
             {option.label}
             {option.hint ? (
-              <span className="font-normal opacity-80">{option.hint}</span>
+              <span aria-hidden={option.spoken ? true : undefined} className="font-normal opacity-80">
+                {" "}
+                {option.hint}
+              </span>
             ) : null}
           </button>
         );

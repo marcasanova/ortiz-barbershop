@@ -226,6 +226,7 @@ export function AdminApp() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <h1 className="sr-only">Panel de Raúl</h1>
       <TopBar
         subtitle="Panel de Raúl"
         action={
@@ -263,12 +264,12 @@ export function AdminApp() {
         <>
           <section aria-labelledby="week-title">
             <div className="flex items-baseline justify-between">
-              <h1
+              <h2
                 id="week-title"
                 className="font-display text-[40px] uppercase"
               >
                 Semana
-              </h1>
+              </h2>
               <p className="text-sm text-text-dim">
                 {totalBookings === 0
                   ? "Nadie apuntado aún"
@@ -598,13 +599,13 @@ function DayEditor({
           {formatDayNumber(day.date)}
         </span>
         <div className="min-w-0 flex-1 pb-1">
-          <h2
+          <h3
             id={`dia-${day.date}-t`}
             className="font-display text-[28px] uppercase"
           >
             {formatWeekday(day.date)}
             <span className="sr-only"> {formatDayNumber(day.date)}</span>
-          </h2>
+          </h3>
           <p className="text-sm text-text-dim">
             {day.bookings.length === 0
               ? "Nadie apuntado"
@@ -649,7 +650,7 @@ function DayEditor({
         </ul>
       ) : null}
 
-      <h3 className="mt-4 text-sm font-semibold text-text">Horario del día</h3>
+      <h4 className="mt-4 text-sm font-semibold text-text">Horario del día</h4>
       <div className="mt-2 space-y-2">
         {windows.map((window, index) => (
           <div
@@ -733,7 +734,7 @@ function DayEditor({
 
       {menuOpen ? (
         <Sheet
-          title={formatDay(day.date)}
+          title={capitalize(formatDay(day.date))}
           onClose={() => setMenuOpen(false)}
         >
           <Button
@@ -817,7 +818,7 @@ function AddDaySheet({
           </p>
         ) : (
           <p className="text-xs text-text-dim">
-            Si hay descanso, añade otra franja después desde la card del día.
+            Si haces descanso, después podrás añadir otra franja desde ese día en la lista.
           </p>
         )}
       </form>
