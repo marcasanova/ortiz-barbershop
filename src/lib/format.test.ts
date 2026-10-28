@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serviceLabel, serviceName } from "./format";
+import { durationText, formatDayNumber, serviceLabel, serviceName } from "./format";
 
 describe("serviceName", () => {
   it("da el nombre completo del servicio", () => {
@@ -19,5 +19,21 @@ describe("serviceName", () => {
 describe("serviceLabel", () => {
   it("añade la duración", () => {
     expect(serviceLabel("corte_barba")).toBe("Corte atemporal vintage (60 min)");
+  });
+});
+
+describe("formatDayNumber", () => {
+  it("devuelve el día del mes sin cero delante", () => {
+    expect(formatDayNumber("2026-10-30")).toBe("30");
+    expect(formatDayNumber("2026-11-03")).toBe("3");
+  });
+});
+
+describe("durationText", () => {
+  it("dice la duración como se diría en voz alta", () => {
+    expect(durationText(30)).toBe("30 minutos");
+    expect(durationText(60)).toBe("1 hora");
+    expect(durationText(90)).toBe("1 hora y 30 minutos");
+    expect(durationText(120)).toBe("2 horas");
   });
 });

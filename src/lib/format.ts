@@ -53,3 +53,19 @@ export function formatWeekday(date: string) {
 export function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** "30" para "2026-10-30". */
+export function formatDayNumber(date: string) {
+  return String(Number(date.slice(8, 10)));
+}
+
+/** "30 minutos", "1 hora", "1 hora y 30 minutos". */
+export function durationText(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const hourText = hours === 1 ? "1 hora" : `${hours} horas`;
+  if (hours === 0) {
+    return `${rest} minutos`;
+  }
+  return rest === 0 ? hourText : `${hourText} y ${rest} minutos`;
+}
