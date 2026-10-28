@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { IconButton } from "./Button";
 import { Icon } from "./Icon";
@@ -32,6 +32,11 @@ export function Sheet({
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  // Se lee al renderizar, antes de que `autoFocus` mueva el foco dentro de la
+  // hoja: así al cerrar se vuelve al botón que la abrió.
+  const [opener] = useState(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -40,7 +45,6 @@ export function Sheet({
   useEffect(() => {
     const self = Symbol("sheet");
     stack.push(self);
-    const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -81,9 +85,11 @@ export function Sheet({
       stack.splice(stack.indexOf(self), 1);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKey);
-      previousFocus?.focus?.();
+      if (opener?.isConnected) {
+        opener.focus();
+      }
     };
-  }, []);
+  }, [opener]);
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
@@ -99,7 +105,7 @@ export function Sheet({
         aria-labelledby={title ? titleId : undefined}
         aria-label={title ? undefined : ariaLabel}
         tabIndex={-1}
-        className={`animate-sheet-up relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl border border-b-0 border-brick-edge bg-brick outline-none sm:rounded-3xl sm:border-b ${className}`}
+        className={`animate-sheet-up relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-sheet border border-b-0 border-brick-edge bg-brick outline-none sm:rounded-sheet sm:border-b ${className}`}
       >
         <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-brick-edge sm:hidden" />
         {header ??
@@ -107,7 +113,7 @@ export function Sheet({
             <div className="flex shrink-0 items-center justify-between gap-2 py-1 pr-2 pl-5">
               <h2
                 id={titleId}
-                className="font-display text-xl uppercase text-text"
+                className="text-lg font-semibold text-text"
               >
                 {title}
               </h2>

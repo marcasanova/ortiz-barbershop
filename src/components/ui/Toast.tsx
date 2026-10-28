@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toast ? (
           <div
             key={toast.id}
-            className={`animate-toast-in pointer-events-auto mb-20 flex max-w-sm items-center gap-2 rounded-2xl border bg-brick px-4 py-3 text-sm font-semibold shadow-[0_8px_30px_rgba(0,0,0,0.6)] ${
+            className={`animate-toast-in pointer-events-auto mb-20 flex max-w-sm items-center gap-2 rounded-full border bg-brick px-4 py-3 text-sm font-semibold ${
               toast.tone === "success"
                 ? "border-neon-lime/60 text-neon-lime"
                 : "border-neon-orange/60 text-neon-orange"

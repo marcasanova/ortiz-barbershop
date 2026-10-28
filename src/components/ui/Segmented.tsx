@@ -12,7 +12,8 @@ export function Segmented<T extends string>({
 }: {
   label: string;
   value: T | null;
-  options: { value: T; label: string; hint?: string; icon?: IconName }[];
+    // `spoken`: nombre completo para lectores de pantalla (p. ej. «Corte, 30 minutos»).
+  options: { value: T; label: string; hint?: string; icon?: IconName; spoken?: string }[];
   onChange: (value: T) => void;
 }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -27,7 +28,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="grid rounded-2xl border border-brick-edge bg-night p-1"
+      className="grid rounded-full border border-brick-edge bg-night p-1"
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       {options.map((option, index) => {
@@ -41,6 +42,7 @@ export function Segmented<T extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={option.spoken}
             tabIndex={selected || (value === null && index === 0) ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => {
@@ -52,9 +54,9 @@ export function Segmented<T extends string>({
                 move(index, -1);
               }
             }}
-            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold touch-manipulation transition-colors ${focusRing} ${
+            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold touch-manipulation transition-colors ${focusRing} ${
               selected
-                ? "bg-neon-pink text-on-neon shadow-[0_0_14px_rgba(255,45,138,0.35)]"
+                ? "bg-neon-pink text-on-neon"
                 : "text-text-dim hover:text-text"
             }`}
           >
@@ -63,7 +65,10 @@ export function Segmented<T extends string>({
             ) : null}
             {option.label}
             {option.hint ? (
-              <span className="font-normal opacity-80">{option.hint}</span>
+              <span aria-hidden={option.spoken ? true : undefined} className="font-normal opacity-80">
+                {" "}
+                {option.hint}
+              </span>
             ) : null}
           </button>
         );

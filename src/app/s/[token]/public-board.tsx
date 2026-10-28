@@ -3,13 +3,13 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SERVICES, type ServiceId } from "@/domain/services";
-import { Appear } from "@/components/ui/Appear";
 import { Button, focusRing } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { Header, TopBar } from "@/components/ui/Header";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
+import { Rail } from "@/components/ui/Rail";
 import { Segmented } from "@/components/ui/Segmented";
 import { Sheet } from "@/components/ui/Sheet";
 import { DayCardSkeleton } from "@/components/ui/Skeleton";
@@ -27,9 +27,10 @@ import {
 } from "@/lib/client-identity";
 import {
   capitalize,
+  durationText,
+  formatDayNumber,
   serviceName,
   formatDay,
-  formatDayMonth,
   formatWeekday,
 } from "@/lib/format";
 import { buildDaySlots, type PublicBooking } from "@/lib/day-slots";
@@ -292,11 +293,11 @@ export function PublicBoard({ token }: { token: string }) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center px-6 pb-16">
         <Header />
-        <h1 className="mt-2 text-center font-display text-2xl uppercase">
-          Enlace caducado
+        <h1 className="mt-4 text-center text-xl font-semibold">
+          Este enlace ya no vale
         </h1>
-        <p className="mt-2 text-center text-text-dim">
-          Este enlace ya no está activo. Pide a Raúl el nuevo por WhatsApp.
+        <p className="mx-auto mt-2 max-w-[30ch] text-center text-text-dim">
+          Raúl ha abierto una semana nueva. Pídele el enlace nuevo por WhatsApp.
         </p>
       </main>
     );
@@ -312,75 +313,70 @@ export function PublicBoard({ token }: { token: string }) {
       {noDays ? (
         <div className="flex flex-1 flex-col items-center justify-center pb-16 text-center">
           <Header />
-          <p className="font-display text-xl uppercase">Aún no hay días</p>
-          <p className="mt-1 text-text-dim">
-            Raúl todavía no ha puesto horas. Vuelve a mirar en un rato.
+          <p className="mt-4 text-xl font-semibold">Todavía no hay horas</p>
+          <p className="mx-auto mt-2 max-w-[30ch] text-text-dim">
+            Raúl aún no ha abierto días esta semana. Vuelve a mirar en un rato.
           </p>
         </div>
       ) : serviceId === null ? (
-        <section className="pt-6" aria-labelledby="pick-service">
-          <Appear>
-            <StepLabel step={1} total={2} />
-            <h1
-              id="pick-service"
-              className="mt-1 font-display text-3xl uppercase text-text"
-            >
-              Elige corte
-            </h1>
-            <p className="mt-1 text-text-dim">
-              Luego verás las horas libres de cada día.
-            </p>
-          </Appear>
-
-          <div className="mt-5 grid gap-3">
-            {SERVICE_IDS.map((id, index) => (
-              <Appear key={id} delayMs={index * 60}>
-                <button
-                  type="button"
-                  onClick={() => setServiceId(id)}
-                  className={`group flex w-full items-center gap-4 rounded-2xl border border-brick-edge bg-brick p-3 pr-4 text-left touch-manipulation transition-[border-color,box-shadow,transform] active:scale-[0.99] ${focusRing} ${SERVICE_STYLE[id].card}`}
-                >
-                  <Image
-                    src={SERVICE_STYLE[id].art}
-                    alt=""
-                    width={88}
-                    height={88}
-                    unoptimized
-                    priority
-                    className="size-[88px] shrink-0 rounded-[20px] border border-brick-edge"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-lg font-semibold leading-tight">
-                      {SERVICES[id].label}
-                    </span>
-                    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-brick-edge px-2.5 py-1 text-xs text-text-dim">
-                      <Icon name="clock" className="size-3.5" />
-                      {SERVICES[id].durationMinutes} min
-                    </span>
-                  </span>
-                  <Icon
-                    name="chevronRight"
-                    className={`size-5 shrink-0 text-text-dim transition-[color,transform] group-hover:translate-x-0.5 ${SERVICE_STYLE[id].arrow}`}
-                  />
-                </button>
-              </Appear>
-            ))}
-          </div>
-
-          {board ? (
-            <p className="mt-4 text-center text-sm text-text-dim">
-              {board.days.length === 1
-                ? "Hay 1 día abierto esta semana."
-                : `Hay ${board.days.length} días abiertos esta semana.`}
-            </p>
-          ) : null}
-
+        <section className="pt-3" aria-labelledby="pick-service">
+          {/* Lo que espera respuesta va antes que elegir un corte nuevo. */}
           {requestBlocks}
           <MyBookings
             bookings={myBookings}
             cancellingId={cancellingId}
             onCancel={(booking) => void cancel(booking)}
           />
+          <h1
+            id="pick-service"
+            className="mt-5 font-display text-[40px] uppercase text-text"
+          >
+            Elige tu corte
+          </h1>
+          <p className="mt-2 text-text-dim">
+            Después verás las horas libres de cada día y quién va.
+          </p>
+
+          <div className="mt-6 grid gap-3">
+            {SERVICE_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setServiceId(id)}
+                className={`group flex w-full items-center gap-4 rounded-panel border border-brick-edge bg-brick p-3 pr-4 text-left touch-manipulation transition-[border-color,box-shadow,transform] active:scale-[0.99] ${focusRing} ${SERVICE_STYLE[id].card}`}
+              >
+                <Image
+                  src={SERVICE_STYLE[id].art}
+                  alt=""
+                  width={88}
+                  height={88}
+                  unoptimized
+                  priority
+                  className="size-[88px] shrink-0 rounded-cell border border-brick-edge"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lg font-semibold leading-tight">
+                    {SERVICES[id].label}
+                  </span>
+                  <span className="mt-1 block text-sm text-text-dim">
+                    {durationText(SERVICES[id].durationMinutes)}
+                  </span>
+                </span>
+                <Icon
+                  name="chevronRight"
+                  className={`size-5 shrink-0 text-text-dim transition-[color,transform] group-hover:translate-x-0.5 ${SERVICE_STYLE[id].arrow}`}
+                />
+              </button>
+            ))}
+          </div>
+
+          {board ? (
+            <p className="mt-4 text-sm text-text-dim">
+              {board.days.length === 1
+                ? "Esta semana hay 1 día abierto."
+                : `Esta semana hay ${board.days.length} días abiertos.`}
+            </p>
+          ) : null}
         </section>
       ) : (
         <>
@@ -394,6 +390,7 @@ export function PublicBoard({ token }: { token: string }) {
                 label: SERVICES[id].shortLabel,
                 hint: `${SERVICES[id].durationMinutes}′`,
                 icon: SERVICE_STYLE[id].icon,
+                spoken: `${SERVICES[id].label}, ${durationText(SERVICES[id].durationMinutes)}`,
               }))}
             />
           </div>
@@ -404,11 +401,6 @@ export function PublicBoard({ token }: { token: string }) {
             cancellingId={cancellingId}
             onCancel={(booking) => void cancel(booking)}
           />
-
-          <div className="mt-2 flex items-baseline justify-between">
-            <StepLabel step={2} total={2} />
-            <p className="text-xs text-text-dim">Toca una hora libre</p>
-          </div>
 
           {loadError ? (
             <Card className="mt-3 text-center">
@@ -426,7 +418,7 @@ export function PublicBoard({ token }: { token: string }) {
           ) : null}
 
           <div
-            className={`mt-3 flex flex-col gap-4 transition-opacity ${stale ? "opacity-50" : ""}`}
+            className={`mt-4 flex flex-col gap-4 transition-opacity ${stale ? "opacity-50" : ""}`}
             aria-busy={stale || !board}
           >
             {!board && !loadError ? (
@@ -435,9 +427,9 @@ export function PublicBoard({ token }: { token: string }) {
                 <DayCardSkeleton />
               </>
             ) : null}
-            {board?.days.map((day, index) => (
-              <Appear key={day.date} delayMs={index * 60}>
+            {board?.days.map((day) => (
                 <DayCard
+                  key={day.date}
                   day={day}
                   disabled={stale}
                   hasMine={myBookings.some((booking) => booking.date === day.date)}
@@ -451,7 +443,6 @@ export function PublicBoard({ token }: { token: string }) {
                   }
                   onRequest={(booking) => setRequestTarget({ date: day.date, booking })}
                 />
-              </Appear>
             ))}
           </div>
         </>
@@ -466,7 +457,7 @@ export function PublicBoard({ token }: { token: string }) {
           onExpired={() => setExpired(true)}
           onBooked={async () => {
             setPicked(null);
-            toast("Estás apuntado");
+            toast(`Reservado: ${formatWeekday(picked.date)} ${formatDayNumber(picked.date)} a las ${picked.startTime}`);
             await load();
             document
               .getElementById("mi-reserva")
@@ -500,14 +491,6 @@ export function PublicBoard({ token }: { token: string }) {
   );
 }
 
-function StepLabel({ step, total }: { step: number; total: number }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neon-cyan">
-      Paso {step} de {total}
-    </p>
-  );
-}
-
 function MyBookings({
   bookings,
   cancellingId,
@@ -521,45 +504,35 @@ function MyBookings({
     return null;
   }
   return (
-    <section
-      id="mi-reserva"
-      aria-label="Tu reserva"
-      className="mt-5 mb-3 flex scroll-mt-32 flex-col gap-2"
-    >
+    <div id="mi-reserva" className="mt-4 flex scroll-mt-32 flex-col">
       {bookings.map((booking) => (
-        <div
+        <Rail
           key={booking.id}
-          className="animate-flash-lime flex items-center gap-3 rounded-2xl border border-neon-lime/60 bg-brick p-4"
+          tone="lime"
+          label="Tu hora"
+          className="animate-flash-lime rounded-cell"
+          action={
+            <Button
+              variant="danger"
+              size="sm"
+              loading={cancellingId === booking.id}
+              onClick={() => onCancel(booking)}
+            >
+              Liberar
+            </Button>
+          }
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-neon-lime/40 bg-night text-neon-lime">
-            <Icon name="check" glow />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-neon-lime">
-              Tu reserva
-            </p>
-            <p className="mt-0.5 truncate font-semibold first-letter:uppercase">
-              {formatWeekday(booking.date)} {formatDayMonth(booking.date)}
-            </p>
-            <p className="truncate text-sm text-text-dim">
-              <span className="font-semibold text-text tabular-hours">
-                {booking.startTime}–{booking.endTime}
-              </span>{" "}
-              · {serviceName(booking.serviceId)}
-            </p>
-          </div>
-          <Button
-            variant="danger"
-            size="sm"
-            className="shrink-0"
-            loading={cancellingId === booking.id}
-            onClick={() => onCancel(booking)}
-          >
-            Liberar
-          </Button>
-        </div>
+          <p className="font-semibold">
+            Tienes hora el {formatWeekday(booking.date)} {formatDayNumber(booking.date)} a las{" "}
+            <span className="tabular-hours text-neon-lime">{booking.startTime}</span>
+          </p>
+          <p className="text-sm text-text-dim">
+            {serviceName(booking.serviceId)}, hasta las{" "}
+            <span className="tabular-hours">{booking.endTime}</span>
+          </p>
+        </Rail>
       ))}
-    </section>
+    </div>
   );
 }
 
@@ -591,48 +564,43 @@ function DayCard({
     <section
       id={`dia-${day.date}`}
       aria-labelledby={`dia-${day.date}-t`}
-      className="rounded-2xl border border-brick-edge bg-brick p-4"
+      className="rounded-panel border border-brick-edge bg-brick p-4"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-end gap-3">
+        <span
+          aria-hidden
+          className="font-display text-[56px] tabular-hours text-text"
+        >
+          {formatDayNumber(day.date)}
+        </span>
+        <div className="min-w-0 flex-1 pb-1">
           <h2
             id={`dia-${day.date}-t`}
-            className="font-display text-2xl uppercase leading-none"
+            className="font-display text-[28px] uppercase text-text"
           >
-            {weekday}{" "}
-            <span className="text-text-dim">{formatDayMonth(day.date)}</span>
+            {weekday}
+            <span className="sr-only"> {formatDayNumber(day.date)}</span>
           </h2>
-          <p className="mt-1.5 flex items-center gap-1 text-xs text-text-dim">
-            <Icon name="clock" className="size-3.5" />
+          <p className="text-sm text-text-dim">
+            de{" "}
             <span className="tabular-hours">
               {day.windows
-                .map((window) => `${window.startTime}–${window.endTime}`)
-                .join(" · ")}
+                .map((window) => `${window.startTime} a ${window.endTime}`)
+                .join(" y de ")}
             </span>
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-            hasMine
-              ? "border-neon-lime/50 text-neon-lime"
-              : free > 0
-                ? "border-neon-cyan/50 text-neon-cyan"
-                : "border-brick-edge text-text-dim"
-          }`}
-        >
-          {hasMine ? "Apuntado" : free > 0 ? `${free} libres` : "Completo"}
-        </span>
       </div>
 
-      {hasMine ? (
-        <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
-          Ya tienes hora este día. Para cambiarla, toca la de alguien y pídele un cambio, o libera la tuya y elige otra libre.
-        </p>
-      ) : free === 0 ? (
-        <p className="mt-4 rounded-xl bg-night px-3 py-3 text-sm text-text-dim">
-          No queda hueco para este corte.
-        </p>
-      ) : null}
+      <p className={`mt-3 text-sm ${hasMine ? "text-neon-lime" : free > 0 ? "text-neon-cyan" : "text-text-dim"}`}>
+        {hasMine
+          ? "Ya tienes hora este día."
+          : free === 0
+            ? "No queda hueco para este corte."
+            : free === 1
+              ? "Queda 1 hora libre."
+              : `Quedan ${free} horas libres.`}
+      </p>
 
       {slots.length > 0 ? (
         <div className="mt-4 grid grid-cols-3 gap-2 min-[360px]:grid-cols-4">
@@ -650,7 +618,7 @@ function DayCard({
                     pendingTargetIds,
                   });
               const detail = `${booking.startTime}–${booking.endTime}, ${mine ? "tu reserva" : booking.clientName}, ${serviceName(booking.serviceId)}`;
-              const cellClass = `flex min-h-12 min-w-0 flex-col items-center justify-center rounded-xl border bg-night px-1.5 leading-tight`;
+              const cellClass = `flex min-h-12 min-w-0 flex-col items-center justify-center rounded-cell border bg-night px-1.5 leading-tight`;
               const label = (
                 <>
                   <span className="text-[11px] tabular-hours text-text-dim">
@@ -717,7 +685,7 @@ function DayCard({
                   role="img"
                   aria-label={`Libre a las ${slot.start}. Ya tienes hora este día.`}
                   title="Libre (ya tienes hora este día)"
-                  className="flex min-h-12 items-center justify-center rounded-xl border border-neon-cyan/20 text-base font-semibold text-neon-cyan/45 tabular-hours"
+                  className="flex min-h-12 items-center justify-center rounded-cell border border-neon-cyan/20 text-base font-semibold text-neon-cyan/45 tabular-hours"
                 >
                   {slot.start}
                 </div>
@@ -730,7 +698,7 @@ function DayCard({
                 disabled={disabled}
                 aria-label={`Reservar ${weekday} a las ${slot.start}`}
                 onClick={() => onPick(slot.start)}
-                className={`min-h-12 rounded-xl border border-neon-cyan/50 bg-neon-cyan/[0.04] text-base font-semibold text-neon-cyan tabular-hours touch-manipulation transition-[background-color,box-shadow,transform] hover:bg-neon-cyan/10 hover:shadow-[0_0_12px_rgba(62,224,255,0.25)] active:scale-95 disabled:opacity-50 ${focusRing}`}
+                className={`min-h-12 rounded-cell border border-neon-cyan/50 bg-neon-cyan/[0.04] text-base font-semibold text-neon-cyan tabular-hours touch-manipulation transition-[background-color,box-shadow,transform] hover:bg-neon-cyan/10 hover:shadow-[0_0_12px_rgba(62,224,255,0.25)] active:scale-95 disabled:opacity-50 ${focusRing}`}
               >
                 {slot.start}
               </button>
@@ -739,20 +707,12 @@ function DayCard({
         </div>
       ) : null}
 
-      {free > 0 && day.bookings.some((booking) => booking.id !== myBookingId) ? (
-        <div
-          aria-hidden
-          className="mt-3 flex items-center gap-4 text-xs text-text-dim"
-        >
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-[4px] border border-neon-cyan/60" />
-            Libre
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-[4px] border border-dashed border-mortar bg-night" />
-            Cogida (tócala para pedirla)
-          </span>
-        </div>
+      {day.bookings.some((booking) => booking.id !== myBookingId) ? (
+        <p className="mt-3 text-sm text-text-dim">
+          {hasMine
+            ? "Toca el nombre de alguien para pedirle que te cambie la hora."
+            : "Toca una hora libre para reservarla, o el nombre de alguien para pedirle la suya."}
+        </p>
       ) : null}
     </section>
   );
@@ -829,8 +789,8 @@ function BookingSheet({
           <span className="animate-flash-lime flex size-20 items-center justify-center rounded-full border border-neon-lime/40 bg-night text-neon-lime">
             <Icon name="star" glow className="size-10" />
           </span>
-          <p className="mt-4 font-display text-2xl uppercase text-neon-lime">
-            Estás apuntado
+          <p className="mt-4 text-xl font-semibold text-neon-lime">
+            Reservado
           </p>
           <p className="mt-1 text-text-dim first-letter:uppercase">
             {formatDay(picked.date)} ·{" "}
@@ -843,7 +803,7 @@ function BookingSheet({
 
   return (
     <Sheet
-      title="Apúntate"
+      title="Reservar esta hora"
       onClose={() => {
         if (!busy) {
           onClose();
@@ -856,24 +816,17 @@ function BookingSheet({
           className="w-full"
           loading={busy}
         >
-          Apúntate a las {picked.startTime}
+          Reservar las {picked.startTime}
         </Button>
       }
     >
-      <div className="flex items-center gap-4 rounded-2xl bg-night p-4">
-        <div className="text-center">
-          <p className="font-display text-4xl leading-none tabular-hours text-text">
-            {picked.startTime}
-          </p>
-          <p className="mt-1 text-xs text-text-dim">{service.durationMinutes} min</p>
-        </div>
-        <div className="min-w-0 border-l border-brick-edge pl-4">
-          <p className="font-semibold first-letter:uppercase">
-            {formatDay(picked.date)}
-          </p>
-          <p className="text-sm text-text-dim">{service.label}</p>
-        </div>
-      </div>
+      <p className="font-display text-[56px] tabular-hours text-text">
+        {picked.startTime}
+      </p>
+      <p className="mt-1 text-text-dim first-letter:uppercase">
+        {formatDay(picked.date)}, {service.label.toLowerCase()} de{" "}
+        {durationText(service.durationMinutes)}
+      </p>
 
       <form id="booking-form" className="mt-5" onSubmit={submit} noValidate>
         <label className="block text-sm text-text-dim" htmlFor="booking-name">

@@ -17,7 +17,7 @@ export function Header({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** Barra fija superior con logo mini; el contenido útil empieza arriba. */
+/** Barra fija superior: logo + wordmark que se enciende una vez. */
 export function TopBar({
   subtitle,
   action,
@@ -26,22 +26,25 @@ export function TopBar({
   action?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-30 -mx-4 border-b border-brick-edge/70 bg-night/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+    <header className="sticky top-0 z-30 -mx-4 border-b border-brick-edge/70 bg-night/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="flex h-14 items-center gap-3">
         <Image
           src="/brand/logo-neon.jpg"
           alt=""
-          width={44}
-          height={44}
-          className="size-11 rounded-lg border border-brick-edge object-cover"
+          width={40}
+          height={40}
+          className="size-10 rounded-lg border border-brick-edge object-cover"
           priority
         />
-        <div className="min-w-0 flex-1 leading-none">
-          <p className="font-display text-base uppercase leading-none text-neon-pink [text-shadow:0_0_10px_rgba(255,45,138,0.45)] sm:text-xl">
-            Ortiz Barbershop
+        <div className="min-w-0 flex-1">
+          <p className="flex items-baseline gap-2">
+            <span className="animate-sign-on font-sign text-[28px] text-neon-pink">
+              ORTIZ
+            </span>
+            <span className="sr-only">Barbershop</span>
           </p>
           {subtitle ? (
-            <p className="mt-0.5 truncate text-xs text-text-dim">{subtitle}</p>
+            <p className="-mt-0.5 truncate text-xs text-text-dim">{subtitle}</p>
           ) : null}
         </div>
         {action}
