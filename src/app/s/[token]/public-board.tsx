@@ -333,7 +333,7 @@ export function PublicBoard({ token }: { token: string }) {
           >
             Elige tu corte
           </h1>
-          <p className="mt-2 max-w-[34ch] text-text-dim">
+          <p className="mt-2 text-text-dim">
             Después verás las horas libres de cada día y quién va.
           </p>
 
