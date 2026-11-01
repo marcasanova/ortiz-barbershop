@@ -14,6 +14,7 @@ export type BoardBooking = {
   start_time: string;
   end_time: string;
   client_name: string;
+  created_by_admin: boolean;
 };
 
 export function buildPublicBoard(params: {
@@ -65,6 +66,8 @@ export function buildPublicBoard(params: {
           serviceId: booking.service_id,
           startTime: toHhMm(booking.start_time),
           endTime: toHhMm(booking.end_time),
+          // Sin navegador dueño: nadie podría responder a una petición.
+          managed: Boolean(booking.created_by_admin),
         })),
       };
     }),

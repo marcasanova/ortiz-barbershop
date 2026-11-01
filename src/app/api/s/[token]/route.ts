@@ -51,7 +51,7 @@ export async function GET(
       .order("start_time"),
     supabase
       .from("bookings")
-      .select("id, slot_date, service_id, start_time, end_time, client_name")
+      .select("id, slot_date, service_id, start_time, end_time, client_name, created_by_admin")
       .eq("week_id", week.id)
       .order("slot_date")
       .order("start_time"),

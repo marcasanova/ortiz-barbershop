@@ -3,7 +3,7 @@ import type { PublicBooking } from "./day-slots";
 
 // Decisiones de la pantalla sobre peticiones de hora, sin React.
 
-export type RequestState = "ok" | "own" | "pending" | "no-fit";
+export type RequestState = "ok" | "own" | "pending" | "no-fit" | "managed";
 
 /** ¿Qué se puede hacer con una hora cogida del tablero? */
 export function requestState(params: {
@@ -17,6 +17,9 @@ export function requestState(params: {
 
   if (booking.id === myBookingId) {
     return "own";
+  }
+  if (booking.managed) {
+    return "managed";
   }
   if (params.pendingTargetIds.includes(booking.id)) {
     return "pending";

@@ -35,6 +35,9 @@ describe("rpcErrorToResponse", () => {
     ["REQUEST_ALREADY_PENDING", 409],
     ["REQUEST_NOT_PENDING", 409],
     ["REQUEST_DOES_NOT_FIT", 409],
+    ["CANNOT_REQUEST_MANAGED", 409],
+    ["DAY_NOT_OPEN", 409],
+    ["DAY_TAKEN", 409],
   ] as const)("mapea %s a %i", async (code, status) => {
     const response = rpcErrorToResponse({ message: code });
     expect(response.status).toBe(status);

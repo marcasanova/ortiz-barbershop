@@ -39,6 +39,18 @@ describe("mapAdminWeek", () => {
           start_time: "16:00:00",
           end_time: "16:30:00",
           client_name: "Marc",
+          paid_at: "2026-10-20T18:00:00Z",
+          created_by_admin: true,
+        },
+        {
+          id: "b2",
+          slot_date: "2026-10-20",
+          service_id: "corte",
+          start_time: "16:30:00",
+          end_time: "17:00:00",
+          client_name: "Luis",
+          paid_at: null,
+          created_by_admin: false,
         },
       ],
     });
@@ -51,6 +63,7 @@ describe("mapAdminWeek", () => {
         {
           date: "2026-10-20",
           windows: [{ id: "w1", startTime: "16:00", endTime: "20:00" }],
+          paidCount: 1,
           bookings: [
             {
               id: "b1",
@@ -58,6 +71,17 @@ describe("mapAdminWeek", () => {
               serviceId: "corte",
               startTime: "16:00",
               endTime: "16:30",
+              paid: true,
+              createdByAdmin: true,
+            },
+            {
+              id: "b2",
+              clientName: "Luis",
+              serviceId: "corte",
+              startTime: "16:30",
+              endTime: "17:00",
+              paid: false,
+              createdByAdmin: false,
             },
           ],
         },

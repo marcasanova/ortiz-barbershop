@@ -31,6 +31,18 @@ describe("requestState", () => {
     ).toBe("own");
   });
 
+  it("un cliente añadido por Raúl no se puede pedir: nadie podría responder", () => {
+    expect(
+      requestState({
+        booking: { ...juan, managed: true },
+        day: { windows, bookings: [juan] },
+        durationMinutes: 30,
+        myBookingId: null,
+        pendingTargetIds: [],
+      }),
+    ).toBe("managed");
+  });
+
   it("si ya la has pedido, queda como pedida", () => {
     expect(
       requestState({

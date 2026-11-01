@@ -4,6 +4,8 @@ export type PublicBooking = {
   serviceId: string;
   startTime: string;
   endTime: string;
+  // Añadido a mano por Raúl: no se le puede pedir la hora.
+  managed?: boolean;
 };
 
 export type DaySlot =

@@ -16,6 +16,8 @@ export type DbBooking = {
   start_time: string;
   end_time: string;
   client_name: string;
+  paid_at: string | null;
+  created_by_admin: boolean;
 };
 
 export function windowsToRpcPayload(windows: WindowInput[]) {
@@ -41,24 +43,28 @@ export function mapAdminWeek(params: {
     id: params.week.id,
     isActive: params.week.is_active,
     hasPublicToken: Boolean(params.week.public_token),
-    days: dates.map((date) => ({
-      date,
-      windows: params.windows
-        .filter((w) => w.date === date)
-        .map((w) => ({
-          id: w.id,
-          startTime: toHhMm(w.start_time),
-          endTime: toHhMm(w.end_time),
-        })),
-      bookings: params.bookings
-        .filter((b) => b.slot_date === date)
-        .map((b) => ({
+    days: dates.map((date) => {
+      const dayBookings = params.bookings.filter((b) => b.slot_date === date);
+      return {
+        date,
+        windows: params.windows
+          .filter((w) => w.date === date)
+          .map((w) => ({
+            id: w.id,
+            startTime: toHhMm(w.start_time),
+            endTime: toHhMm(w.end_time),
+          })),
+        paidCount: dayBookings.filter((b) => b.paid_at).length,
+        bookings: dayBookings.map((b) => ({
           id: b.id,
           clientName: b.client_name,
           serviceId: b.service_id,
           startTime: toHhMm(b.start_time),
           endTime: toHhMm(b.end_time),
+          paid: Boolean(b.paid_at),
+          createdByAdmin: b.created_by_admin,
         })),
-    })),
+      };
+    }),
   };
 }

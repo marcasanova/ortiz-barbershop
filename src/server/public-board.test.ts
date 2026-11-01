@@ -57,6 +57,7 @@ describe("buildPublicBoard", () => {
           start_time: "16:00:00",
           end_time: "16:30:00",
           client_name: "Marc",
+          created_by_admin: false,
         },
       ],
     });
@@ -71,7 +72,30 @@ describe("buildPublicBoard", () => {
       serviceId: "corte",
       startTime: "16:00",
       endTime: "16:30",
+      managed: false,
     });
+  });
+
+  it("marca las reservas de Raúl como managed y nunca expone el pago", () => {
+    const board = buildPublicBoard({
+      service: SERVICES.corte,
+      windows: [{ date: "2026-10-20", start_time: "16:00", end_time: "20:00" }],
+      bookings: [
+        {
+          id: "b1",
+          slot_date: "2026-10-20",
+          service_id: "corte",
+          start_time: "16:00:00",
+          end_time: "16:30:00",
+          client_name: "Marc",
+          created_by_admin: true,
+          paid_at: "2026-10-20T18:00:00Z",
+        } as never,
+      ],
+    });
+
+    expect(board.days[0].bookings[0]).toMatchObject({ id: "b1", managed: true });
+    expect(JSON.stringify(board)).not.toContain("paid");
   });
 
   it("fusiona inicios de dos ventanas el mismo día", () => {
