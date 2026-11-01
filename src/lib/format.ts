@@ -44,6 +44,21 @@ export function formatDayMonth(date: string) {
     .replace(".", "");
 }
 
+/** "27 oct a las 16:34", siempre en hora de España. */
+export function formatGeneratedAt(timestamp: string) {
+  const at = new Date(timestamp);
+  const zone = { timeZone: "Europe/Madrid" };
+  const day = at
+    .toLocaleDateString("es-ES", { ...zone, day: "numeric", month: "short" })
+    .replace(".", "");
+  const time = at.toLocaleTimeString("es-ES", {
+    ...zone,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${day} a las ${time}`;
+}
+
 export function formatWeekday(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("es-ES", {
     weekday: "long",

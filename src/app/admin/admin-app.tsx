@@ -16,8 +16,8 @@ import { api, ApiError } from "@/lib/api";
 import {
   capitalize,
   formatDay,
-  formatDayMonth,
   formatDayNumber,
+  formatGeneratedAt,
   formatDayShort,
   formatWeekday,
 } from "@/lib/format";
@@ -34,6 +34,7 @@ import {
   type ClientFields,
   type SwapCandidate,
 } from "./admin-clients";
+import { WeekPicker, type WeekOption } from "./week-picker";
 
 type WindowRow = { startTime: string; endTime: string };
 
@@ -51,23 +52,10 @@ type AdminWeek = {
   days: AdminDay[];
 };
 
-type WeekOption = {
-  id: string;
-  isActive: boolean;
-  isLatest: boolean;
-  firstDate: string | null;
-  lastDate: string | null;
-};
-
 type Ask = ReturnType<typeof useConfirm>["ask"];
 
 function paidText(paid: number, total: number) {
   return `${paid} de ${total} ${total === 1 ? "pagado" : "pagados"}`;
-}
-
-function weekLabel(option: WeekOption) {
-  const from = option.firstDate ? `Semana del ${formatDayMonth(option.firstDate)}` : "Semana sin días";
-  return option.isLatest ? `${from} (actual)` : from;
 }
 
 
@@ -99,6 +87,7 @@ export function AdminApp() {
   const [authed, setAuthed] = useState(false);
   const [week, setWeek] = useState<AdminWeek | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [linkGeneratedAt, setLinkGeneratedAt] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [weeks, setWeeks] = useState<WeekOption[]>([]);
@@ -126,10 +115,12 @@ export function AdminApp() {
     }
 
     try {
-      const data = await api<{ url: string }>("/api/admin/link");
+      const data = await api<{ url: string; generatedAt: string }>("/api/admin/link");
       setLink(data.url);
+      setLinkGeneratedAt(data.generatedAt);
     } catch {
       setLink(null);
+      setLinkGeneratedAt(null);
     }
 
     try {
@@ -339,6 +330,9 @@ export function AdminApp() {
     selectedWeekId && weeks.find((option) => option.id === selectedWeekId)?.isLatest === false,
   );
   const openDates = week?.days.filter((day) => day.windows.length > 0).map((day) => day.date) ?? [];
+  const selectedWeek =
+    weeks.find((option) => (selectedWeekId ? option.id === selectedWeekId : option.isLatest)) ??
+    null;
   const allClients: SwapCandidate[] =
     week?.days.flatMap((day) => day.bookings.map((booking) => ({ ...booking, date: day.date }))) ?? [];
 
@@ -354,26 +348,13 @@ export function AdminApp() {
         }
       />
 
-        {weeks.length > 1 ? (
+      {weeks.length > 1 && selectedWeek ? (
         <div>
-          <label htmlFor="week-select" className="sr-only">
-            Elegir semana
-          </label>
-          <select
-            id="week-select"
-            value={selectedWeekId ?? weeks.find((option) => option.isLatest)?.id ?? ""}
-            onChange={(event) => {
-              const chosen = weeks.find((option) => option.id === event.target.value);
-              setSelectedWeekId(chosen?.isLatest ? null : event.target.value);
-            }}
-            className={`min-h-11 w-full rounded-full border border-brick-edge bg-brick px-4 text-sm text-text touch-manipulation ${focusRing}`}
-          >
-            {weeks.map((option) => (
-              <option key={option.id} value={option.id}>
-                {weekLabel(option)}
-              </option>
-            ))}
-          </select>
+          <WeekPicker
+            weeks={weeks}
+            selected={selectedWeek}
+            onSelect={(chosen) => setSelectedWeekId(chosen.isLatest ? null : chosen.id)}
+          />
           {readOnly ? (
             <p className="mt-2 text-sm text-text-dim">
               Semana pasada: solo puedes marcar quién ha pagado.
@@ -385,6 +366,7 @@ export function AdminApp() {
       {readOnly ? null : (
       <LinkCard
           link={link}
+          generatedAt={linkGeneratedAt}
           canGenerate={Boolean(week)}
           ask={ask}
           onGenerated={async (url) => {
@@ -618,11 +600,13 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
 
 function LinkCard({
   link,
+  generatedAt,
   canGenerate,
   ask,
   onGenerated,
 }: {
   link: string | null;
+  generatedAt: string | null;
   canGenerate: boolean;
   ask: Ask;
   onGenerated: (url: string) => Promise<void>;
@@ -689,10 +673,15 @@ function LinkCard({
 
   return (
     <Card>
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Enlace del grupo</h2>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Enlace del grupo</h2>
+          {link && generatedAt ? (
+            <p className="text-sm text-text-dim">Generado el {formatGeneratedAt(generatedAt)}</p>
+          ) : null}
+        </div>
         {link ? (
-          <span className="flex items-center gap-1.5 text-sm text-neon-lime">
+          <span className="mt-1 flex shrink-0 items-center gap-1.5 text-sm text-neon-lime">
             <span className="size-2 rounded-full bg-neon-lime shadow-[0_0_8px_rgba(200,255,58,0.8)]" />
             Funciona
           </span>

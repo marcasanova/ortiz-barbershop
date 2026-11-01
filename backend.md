@@ -190,6 +190,7 @@ Cookie de admin tras `POST /api/admin/login`. PIN en `ADMIN_PIN`.
 - `PUT /api/admin/bookings/:id/paid` `{ paid }` → `204`.
 - `POST /api/admin/bookings/swap` `{ bookingA, bookingB }` → `204`.
 - `POST /api/admin/week/days/move` `{ from, to }` → `204`.
+- `GET /api/admin/link` → `{ url, generatedAt }`. `generatedAt` es `weeks.updated_at`: solo `rotate_public_link` escribe en esa fila.
 - `GET /api/admin/weeks` → semanas para el selector.
 - `GET /api/admin/week?id=` → una semana concreta (sin `id`, la última).
 
