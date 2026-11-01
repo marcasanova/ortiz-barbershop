@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { durationText, formatDayNumber, serviceLabel, serviceName } from "./format";
+import {
+  durationText,
+  formatDayNumber,
+  formatGeneratedAt,
+  serviceLabel,
+  serviceName,
+} from "./format";
 
 describe("serviceName", () => {
   it("da el nombre completo del servicio", () => {
@@ -35,5 +41,15 @@ describe("durationText", () => {
     expect(durationText(60)).toBe("1 hora");
     expect(durationText(90)).toBe("1 hora y 30 minutos");
     expect(durationText(120)).toBe("2 horas");
+  });
+});
+
+describe("formatGeneratedAt", () => {
+  it("da fecha y hora de España, también si el servidor guarda UTC", () => {
+    expect(formatGeneratedAt("2026-10-27T15:34:55.767Z")).toBe("27 oct a las 16:34");
+  });
+
+  it("usa la fecha de España cuando en UTC aún es el día anterior", () => {
+    expect(formatGeneratedAt("2026-07-14T22:30:00Z")).toBe("15 jul a las 00:30");
   });
 });

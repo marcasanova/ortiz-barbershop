@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient();
   const { data: week, error } = await supabase
     .from("weeks")
-    .select("public_token")
+    .select("public_token, updated_at")
     .eq("is_active", true)
     .not("public_token", "is", null)
     .maybeSingle();
@@ -72,5 +72,9 @@ export async function GET(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
-  return jsonOk({ url: buildPublicUrl(origin, week.public_token) });
+  // Solo rotate_public_link actualiza weeks: updated_at es cuándo se generó.
+  return jsonOk({
+    url: buildPublicUrl(origin, week.public_token),
+    generatedAt: week.updated_at,
+  });
 }
