@@ -16,6 +16,7 @@ import { api, ApiError } from "@/lib/api";
 import {
   capitalize,
   formatDay,
+  formatDayMonth,
   formatDayNumber,
   formatDayShort,
   formatWeekday,
@@ -58,8 +59,12 @@ type WeekOption = {
 
 type Ask = ReturnType<typeof useConfirm>["ask"];
 
+function paidText(paid: number, total: number) {
+  return `${paid} de ${total} ${total === 1 ? "pagado" : "pagados"}`;
+}
+
 function weekLabel(option: WeekOption) {
-  const from = option.firstDate ? `Semana del ${formatDayShort(option.firstDate)}` : "Semana sin días";
+  const from = option.firstDate ? `Semana del ${formatDayMonth(option.firstDate)}` : "Semana sin días";
   return option.isLatest ? `${from} (actual)` : from;
 }
 
@@ -386,7 +391,7 @@ export function AdminApp() {
               <p className="text-sm text-text-dim">
                 {totalBookings === 0
                   ? "Nadie apuntado aún"
-                  : `${week.days.reduce((sum, day) => sum + day.paidCount, 0)} de ${totalBookings} pagados`}
+                  : paidText(week.days.reduce((sum, day) => sum + day.paidCount, 0), totalBookings)}
               </p>
             </div>
             {week.days.length > 0 ? (
@@ -774,7 +779,7 @@ function DayEditor({
           <p className="text-sm text-text-dim">
             {day.bookings.length === 0
               ? "Nadie apuntado"
-              : `${day.paidCount} de ${day.bookings.length} pagados`}
+              : paidText(day.paidCount, day.bookings.length)}
           </p>
         </div>
         {readOnly ? null : (

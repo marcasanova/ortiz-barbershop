@@ -50,6 +50,17 @@ La apariencia, el branding y el modo oscuro no forman parte de este documento. S
   - Raúl entra con un PIN. Sin login de clientes.
   - Ve la semana, edita franjas, genera el enlace y puede cancelar cualquier reserva.
 
+- **FR-A5: Gestionar clientes**
+  - Raúl puede añadir, editar (nombre, corte, día y hora), intercambiar y eliminar clientes.
+  - Puede usar cualquier hora de un día abierto, también fuera del horario, pero dos clientes nunca se solapan.
+  - A un cliente añadido por Raúl no se le puede pedir la hora: no tiene navegador que responda.
+- **FR-A6: Cambiar la agenda**
+  - Raúl puede mover un día entero a otra fecha libre, con su horario y sus clientes.
+  - Al cambiar un horario solo se cancelan las reservas que se quedan fuera.
+- **FR-A7: Control de pagos**
+  - Raúl marca qué cortes están pagados y ve cuántos llevan pagado cada día y la semana. Solo lo ve él.
+  - Puede consultar semanas pasadas; en ellas solo se puede marcar el pago.
+
 ### Módulo B: Reserva (Cliente / amigos)
 
 - **FR-B1: Acceso sin registro**

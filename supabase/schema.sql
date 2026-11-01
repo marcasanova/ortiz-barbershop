@@ -391,4 +391,5 @@ grant execute on function public.rotate_public_link(uuid) to service_role;
 grant execute on function public.replace_day_windows(uuid, date, jsonb) to service_role;
 
 -- Después de este archivo: supabase/enable-realtime.sql y
--- supabase/swap-requests.sql (peticiones de hora entre amigos).
+-- supabase/swap-requests.sql (peticiones de hora entre amigos),
+-- supabase/fix-board-pulse.sql y supabase/admin-tools.sql (panel de Raúl).

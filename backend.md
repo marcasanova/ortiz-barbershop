@@ -49,9 +49,13 @@ Varias filas el mismo día si hay descanso.
 | `start_time` / `end_time` | `time` | `end` = inicio + duración del servicio |
 | `client_name` | `text` | |
 | `client_name_normalized` | generado | `lower(trim(client_name))` |
-| `client_key_hash` | `text` | |
+| `client_key_hash` | `text` | Aleatorio en las reservas creadas por Raúl |
 | `cancel_token_hash` | `text` | |
+| `paid_at` | `timestamptz` | Null = sin pagar. Solo admin, nunca en la API pública |
+| `created_by_admin` | `boolean` | Añadida por Raúl: no se le puede pedir la hora |
 | `created_at` | `timestamptz` | |
+
+`window_id` admite null: Raúl la ha puesto fuera del horario del día.
 
 ```
 UNIQUE (slot_date, client_name_normalized)
@@ -133,7 +137,13 @@ Invalida la activa, asigna un `public_token` de 8 hex (`encode(gen_random_bytes(
 
 ### `replace_day_windows(p_week_id, p_date, p_windows jsonb)`
 
-Sustituye las franjas de ese día. Las reservas de las ventanas borradas caen por `CASCADE`.
+Sustituye las franjas de ese día. Solo cancela las reservas que tenían franja y no caben en las nuevas; las que Raúl puso fuera del horario se mantienen. Con `p_windows` vacío quita el día con todas sus reservas.
+
+### Panel de Raúl (`supabase/admin-tools.sql`)
+
+- `admin_create_booking`, `admin_update_booking`, `admin_swap_bookings`: cualquier hora de un día abierto (`DAY_NOT_OPEN`), sin solapes (`SLOT_TAKEN`) y con las unicidades por día. Las peticiones pendientes de esas reservas caducan.
+- `admin_set_paid(p_booking_id, p_paid)`.
+- `admin_move_day(p_week_id, p_from, p_to)`: `DAY_TAKEN` si el destino ya tiene horario.
 
 ### Peticiones de hora (`supabase/swap-requests.sql`)
 
@@ -175,6 +185,13 @@ Cookie de admin tras `POST /api/admin/login`. PIN en `ADMIN_PIN`.
 - `POST /api/admin/link` → `rotate_public_link`.
 - `GET /api/admin/link` → URL vigente o `404`.
 - `DELETE /api/admin/bookings/:id` → `admin_cancel_booking`.
+- `POST /api/admin/bookings` `{ name, serviceId, date, startTime }` → `201 { id }`.
+- `PATCH /api/admin/bookings/:id` con el mismo cuerpo → `204`.
+- `PUT /api/admin/bookings/:id/paid` `{ paid }` → `204`.
+- `POST /api/admin/bookings/swap` `{ bookingA, bookingB }` → `204`.
+- `POST /api/admin/week/days/move` `{ from, to }` → `204`.
+- `GET /api/admin/weeks` → semanas para el selector.
+- `GET /api/admin/week?id=` → una semana concreta (sin `id`, la última).
 
 Ya no hay `PUT /settings` ni rutas de `slots` sueltos.
 
@@ -261,6 +278,7 @@ Ya no hay `PUT /settings` ni rutas de `slots` sueltos.
 | FR-A1 / FR-A2 | `PUT /api/admin/week/days` → `replace_day_windows` |
 | FR-A3 | `POST /api/admin/link` → `rotate_public_link` |
 | FR-A4 | `POST /api/admin/login` |
+| FR-A5 / FR-A6 / FR-A7 | `/api/admin/bookings*`, `/api/admin/week/days/move`, `/api/admin/weeks` → `supabase/admin-tools.sql` |
 | FR-B2 | `GET /api/s/:token?service=` + `listAvailableStarts` |
 | FR-B3 / FR-B4 | `POST …/bookings` → `book_slot` |
 | FR-B5 | `week_board` |

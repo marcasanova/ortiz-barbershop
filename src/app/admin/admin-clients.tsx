@@ -8,7 +8,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { SERVICES, type ServiceId } from "@/domain/services";
 import { ApiError } from "@/lib/api";
-import { capitalize, durationText, formatDay, formatDayShort, serviceName } from "@/lib/format";
+import { durationText, formatDay, formatDayShort, serviceName } from "@/lib/format";
 
 export type AdminBooking = {
   id: string;
@@ -306,7 +306,7 @@ export function MoveDaySheet({
 
   return (
     <Sheet
-      title={`Mover ${capitalize(formatDay(date))}`}
+      title={`Mover el ${formatDay(date)}`}
       onClose={() => {
         if (!saving) {
           onClose();
