@@ -25,6 +25,7 @@ const glyphs = {
   ),
   plus: <path d="M12 5v14M5 12h14" />,
   more: <path d="M5 12h.01M12 12h.01M19 12h.01" />,
+  swap: <path d="M7 4L3.5 7.5 7 11M3.5 7.5H20M17 13l3.5 3.5L17 20M20.5 16.5H4" />,
   clock: (
     <>
       <circle cx="12" cy="12" r="8.5" />

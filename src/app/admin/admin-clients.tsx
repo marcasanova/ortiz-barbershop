@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button, focusRing } from "@/components/ui/Button";
+import { Button, focusRing, IconButton } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Segmented } from "@/components/ui/Segmented";
 import { Sheet } from "@/components/ui/Sheet";
@@ -45,17 +46,19 @@ export function adminErrorCopy(error: unknown, fallback: string) {
 
 const SERVICE_IDS = Object.keys(SERVICES) as ServiceId[];
 
-/** Fila de cliente: casilla de pagado y, al tocarla, su ficha. */
+/** Fila de cliente: casilla de pagado, su ficha y el botón de moverlo. */
 export function ClientRow({
   booking,
   readOnly,
   onTogglePaid,
   onOpen,
+  onMove,
 }: {
   booking: AdminBooking;
   readOnly: boolean;
   onTogglePaid: (paid: boolean) => void;
   onOpen: () => void;
+  onMove: () => void;
 }) {
   const details = (
     <>
@@ -85,38 +88,42 @@ export function ClientRow({
       {readOnly ? (
         <div className="flex min-h-14 min-w-0 flex-1 items-center gap-3">{details}</div>
       ) : (
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-label={`Editar a ${booking.clientName}`}
-          className={`flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-cell text-left touch-manipulation hover:bg-brick-edge/30 ${focusRing}`}
-        >
-          {details}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={onOpen}
+            aria-label={`Editar a ${booking.clientName}`}
+            className={`flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-cell text-left touch-manipulation hover:bg-brick-edge/30 ${focusRing}`}
+          >
+            {details}
+          </button>
+          <IconButton
+            label={`Mover o intercambiar a ${booking.clientName}`}
+            onClick={onMove}
+          >
+            <Icon name="swap" className="size-5 text-neon-cyan" />
+          </IconButton>
+        </>
       )}
     </li>
   );
 }
 
-/** Ficha de un cliente: añadirlo, editarlo, intercambiarlo o eliminarlo. */
+/** Ficha de un cliente: añadirlo, editarlo o eliminarlo. */
 export function ClientSheet({
   booking,
   date,
   openDates,
-  swapCandidates,
   onClose,
   onSave,
-  onSwap,
   onDelete,
 }: {
   // null = cliente nuevo.
   booking: AdminBooking | null;
   date: string;
   openDates: string[];
-  swapCandidates: SwapCandidate[];
   onClose: () => void;
   onSave: (fields: ClientFields) => Promise<void>;
-  onSwap: (other: SwapCandidate) => void;
   onDelete: () => void;
 }) {
   const [name, setName] = useState(booking?.clientName ?? "");
@@ -127,7 +134,6 @@ export function ClientSheet({
   const [startTime, setStartTime] = useState(booking?.startTime ?? "16:00");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [swapping, setSwapping] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -145,41 +151,6 @@ export function ClientSheet({
     }
   }
 
-  if (swapping) {
-    return (
-      <Sheet title={`Intercambiar a ${booking?.clientName}`} onClose={() => setSwapping(false)}>
-        <p className="text-sm text-text-dim">
-          Elige con quién cambia la hora. Cada uno mantiene su corte.
-        </p>
-        {swapCandidates.length === 0 ? (
-          <p className="mt-3 text-text-dim">No hay más clientes esta semana.</p>
-        ) : (
-          <ul className="mt-2 divide-y divide-brick-edge/60">
-            {swapCandidates.map((other) => (
-              <li key={other.id}>
-                <button
-                  type="button"
-                  onClick={() => onSwap(other)}
-                  className={`flex min-h-12 w-full items-center gap-3 rounded-cell text-left touch-manipulation hover:bg-brick-edge/30 ${focusRing}`}
-                >
-                  <span className="w-[5.5rem] shrink-0 text-sm capitalize text-text-dim">
-                    {formatDayShort(other.date)}
-                  </span>
-                  <span className="w-12 shrink-0 text-sm tabular-hours text-text-dim">
-                    {other.startTime}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {other.clientName}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Sheet>
-    );
-  }
-
   return (
     <Sheet
       title={booking ? `Editar a ${booking.clientName}` : "Añadir cliente"}
@@ -194,14 +165,9 @@ export function ClientSheet({
             {booking ? "Guardar cambios" : "Añadir cliente"}
           </Button>
           {booking ? (
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setSwapping(true)}>
-                Intercambiar con…
-              </Button>
-              <Button variant="danger" size="sm" onClick={onDelete}>
-                Eliminar
-              </Button>
-            </div>
+            <Button variant="danger" size="sm" className="w-full" onClick={onDelete}>
+              Eliminar
+            </Button>
           ) : null}
         </div>
       }
@@ -272,6 +238,82 @@ export function ClientSheet({
           </p>
         ) : null}
       </form>
+    </Sheet>
+  );
+}
+
+/** Mover a un cliente a una hora libre o cambiarle la hora con otro. */
+export function MoveClientSheet({
+  booking,
+  freeDays,
+  swapCandidates,
+  onClose,
+  onMoveTo,
+  onSwap,
+}: {
+  booking: AdminBooking;
+  freeDays: { date: string; starts: string[] }[];
+  swapCandidates: SwapCandidate[];
+  onClose: () => void;
+  onMoveTo: (date: string, startTime: string) => void;
+  onSwap: (other: SwapCandidate) => void;
+}) {
+  return (
+    <Sheet title={`Mover a ${booking.clientName}`} onClose={onClose}>
+      <p className="text-sm text-text-dim">
+        Ahora va a las <span className="tabular-hours text-text">{booking.startTime}</span>. Cada
+        uno mantiene su corte.
+      </p>
+
+      <h3 className="mt-4 text-sm font-semibold">Horas libres</h3>
+      {freeDays.length === 0 ? (
+        <p className="mt-1 text-sm text-text-dim">No hay horas libres donde quepa su corte.</p>
+      ) : (
+        freeDays.map((day) => (
+          <div key={day.date} className="mt-2">
+            <p className="text-sm capitalize text-text-dim">{formatDayShort(day.date)}</p>
+            <div className="mt-1.5 grid grid-cols-4 gap-2">
+              {day.starts.map((start) => (
+                <button
+                  key={start}
+                  type="button"
+                  onClick={() => onMoveTo(day.date, start)}
+                  className={`min-h-11 rounded-cell border border-neon-cyan/40 text-sm font-semibold tabular-hours text-neon-cyan touch-manipulation hover:border-neon-cyan active:scale-95 ${focusRing}`}
+                >
+                  {start}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+
+      <h3 className="mt-5 text-sm font-semibold">Cambiar con otro cliente</h3>
+      {swapCandidates.length === 0 ? (
+        <p className="mt-1 text-sm text-text-dim">No hay más clientes esta semana.</p>
+      ) : (
+        <ul className="mt-1 divide-y divide-brick-edge/60">
+          {swapCandidates.map((other) => (
+            <li key={other.id}>
+              <button
+                type="button"
+                onClick={() => onSwap(other)}
+                className={`flex min-h-12 w-full items-center gap-3 rounded-cell text-left touch-manipulation hover:bg-brick-edge/30 ${focusRing}`}
+              >
+                <span className="w-[5.5rem] shrink-0 text-sm capitalize text-text-dim">
+                  {formatDayShort(other.date)}
+                </span>
+                <span className="w-12 shrink-0 text-sm tabular-hours text-text-dim">
+                  {other.startTime}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                  {other.clientName}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </Sheet>
   );
 }

@@ -21,11 +21,13 @@ import {
   formatDayShort,
   formatWeekday,
 } from "@/lib/format";
-import { bookingsLost } from "@/lib/admin-schedule";
+import { SERVICES, type ServiceId } from "@/domain/services";
+import { bookingsLost, freeHours } from "@/lib/admin-schedule";
 import { useBoardRealtime } from "@/lib/use-board-realtime";
 import {
   ClientRow,
   ClientSheet,
+  MoveClientSheet,
   MoveDaySheet,
   adminErrorCopy,
   type AdminBooking,
@@ -102,6 +104,7 @@ export function AdminApp() {
   const [weeks, setWeeks] = useState<WeekOption[]>([]);
   // null = la semana actual (la última).
   const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
+  const [movingClient, setMovingClient] = useState<AdminBooking | null>(null);
   const [clientSheet, setClientSheet] = useState<{
     booking: AdminBooking | null;
     date: string;
@@ -249,6 +252,33 @@ export function AdminApp() {
     toast(booking ? "Cambios guardados" : "Cliente añadido");
   }
 
+  async function moveClient(booking: AdminBooking, date: string, startTime: string) {
+    const ok = await ask({
+      title: `¿Mover a ${booking.clientName}?`,
+      body: `Pasa al ${formatDay(date)} a las ${startTime}.`,
+      confirmLabel: "Mover",
+    });
+    if (!ok) {
+      return;
+    }
+    try {
+      await api(`/api/admin/bookings/${booking.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: booking.clientName,
+          serviceId: booking.serviceId,
+          date,
+          startTime,
+        }),
+      });
+      setMovingClient(null);
+      await load();
+      toast(`${booking.clientName} pasa a las ${startTime}`);
+    } catch (error) {
+      toast(adminErrorCopy(error, "No se ha podido mover."), "warn");
+    }
+  }
+
   async function swapClients(booking: AdminBooking, other: SwapCandidate) {
     const ok = await ask({
       title: "¿Intercambiar las horas?",
@@ -263,7 +293,7 @@ export function AdminApp() {
         method: "POST",
         body: JSON.stringify({ bookingA: booking.id, bookingB: other.id }),
       });
-      setClientSheet(null);
+      setMovingClient(null);
       await load();
       toast("Horas intercambiadas");
     } catch (error) {
@@ -435,6 +465,7 @@ export function AdminApp() {
                 onMove={() => setMoveDay({ date: day.date, target: "" })}
                 onAddClient={() => setClientSheet({ booking: null, date: day.date })}
                 onOpenClient={(booking) => setClientSheet({ booking, date: day.date })}
+                onMoveClient={setMovingClient}
                 onTogglePaid={(booking, paid) => void togglePaid(booking, paid)}
               />
           ))}
@@ -470,21 +501,28 @@ export function AdminApp() {
           booking={clientSheet.booking}
           date={clientSheet.date}
           openDates={openDates}
-          swapCandidates={allClients.filter(
-            (client) => client.id !== clientSheet.booking?.id,
-          )}
           onClose={() => setClientSheet(null)}
           onSave={(fields) => saveClient(clientSheet.booking, fields)}
-          onSwap={(other) => {
-            if (clientSheet.booking) {
-              void swapClients(clientSheet.booking, other);
-            }
-          }}
           onDelete={() => {
             if (clientSheet.booking) {
               void deleteClient(clientSheet.booking);
             }
           }}
+        />
+      ) : null}
+
+      {movingClient && week ? (
+        <MoveClientSheet
+          booking={movingClient}
+          freeDays={freeHours(
+            week.days,
+            movingClient.id,
+            SERVICES[movingClient.serviceId as ServiceId]?.durationMinutes ?? 30,
+          )}
+          swapCandidates={allClients.filter((client) => client.id !== movingClient.id)}
+          onClose={() => setMovingClient(null)}
+          onMoveTo={(date, startTime) => void moveClient(movingClient, date, startTime)}
+          onSwap={(other) => void swapClients(movingClient, other)}
         />
       ) : null}
 
@@ -712,6 +750,7 @@ function DayEditor({
   onMove,
   onAddClient,
   onOpenClient,
+  onMoveClient,
   onTogglePaid,
 }: {
   day: AdminDay;
@@ -721,6 +760,7 @@ function DayEditor({
   onMove: () => void;
   onAddClient: () => void;
   onOpenClient: (booking: AdminBooking) => void;
+  onMoveClient: (booking: AdminBooking) => void;
   onTogglePaid: (booking: AdminBooking, paid: boolean) => void;
 }) {
   // Clave por contenido: un refresco en tiempo real con las mismas franjas
@@ -802,6 +842,7 @@ function DayEditor({
               readOnly={readOnly}
               onTogglePaid={(paid) => onTogglePaid(booking, paid)}
               onOpen={() => onOpenClient(booking)}
+              onMove={() => onMoveClient(booking)}
             />
           ))}
         </ul>
