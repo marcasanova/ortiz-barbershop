@@ -7,3 +7,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Ramas
+
+- Todas las modificaciones de código se hacen sobre la rama `develop`.
+- `main` es producción: nunca se hacen cambios ni commits directamente en ella.
+- Marc hace las pruebas y es el único encargado de hacer los merges a `main`.
