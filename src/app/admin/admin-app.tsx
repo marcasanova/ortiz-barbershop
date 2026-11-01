@@ -19,23 +19,25 @@ import {
   formatDayNumber,
   formatDayShort,
   formatWeekday,
-  serviceName,
 } from "@/lib/format";
+import { bookingsLost } from "@/lib/admin-schedule";
 import { useBoardRealtime } from "@/lib/use-board-realtime";
+import {
+  ClientRow,
+  ClientSheet,
+  MoveDaySheet,
+  adminErrorCopy,
+  type AdminBooking,
+  type ClientFields,
+  type SwapCandidate,
+} from "./admin-clients";
 
 type WindowRow = { startTime: string; endTime: string };
-
-type AdminBooking = {
-  id: string;
-  clientName: string;
-  serviceId: string;
-  startTime: string;
-  endTime: string;
-};
 
 type AdminDay = {
   date: string;
   windows: { id: string; startTime: string; endTime: string }[];
+  paidCount: number;
   bookings: AdminBooking[];
 };
 
@@ -46,7 +48,20 @@ type AdminWeek = {
   days: AdminDay[];
 };
 
+type WeekOption = {
+  id: string;
+  isActive: boolean;
+  isLatest: boolean;
+  firstDate: string | null;
+  lastDate: string | null;
+};
+
 type Ask = ReturnType<typeof useConfirm>["ask"];
+
+function weekLabel(option: WeekOption) {
+  const from = option.firstDate ? `Semana del ${formatDayShort(option.firstDate)}` : "Semana sin días";
+  return option.isLatest ? `${from} (actual)` : from;
+}
 
 
 function windowsError(windows: WindowRow[]): string {
@@ -70,17 +85,6 @@ function windowsError(windows: WindowRow[]): string {
   return "";
 }
 
-function bookingsOutside(bookings: AdminBooking[], windows: WindowRow[]) {
-  return bookings.filter(
-    (booking) =>
-      !windows.some(
-        (window) =>
-          booking.startTime >= window.startTime &&
-          booking.endTime <= window.endTime,
-      ),
-  );
-}
-
 export function AdminApp() {
   const toast = useToast();
   const { ask, dialog } = useConfirm();
@@ -90,10 +94,20 @@ export function AdminApp() {
   const [link, setLink] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [weeks, setWeeks] = useState<WeekOption[]>([]);
+  // null = la semana actual (la última).
+  const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
+  const [clientSheet, setClientSheet] = useState<{
+    booking: AdminBooking | null;
+    date: string;
+  } | null>(null);
+  const [moveDay, setMoveDay] = useState<{ date: string; target: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const data = await api<AdminWeek>("/api/admin/week");
+      const data = await api<AdminWeek>(
+        selectedWeekId ? `/api/admin/week?id=${selectedWeekId}` : "/api/admin/week",
+      );
       setWeek(data);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
@@ -109,7 +123,14 @@ export function AdminApp() {
     } catch {
       setLink(null);
     }
-  }, []);
+
+    try {
+      const data = await api<{ weeks: WeekOption[] }>("/api/admin/weeks");
+      setWeeks(data.weeks);
+    } catch {
+      // Sin lista no hay selector, pero el panel sigue funcionando.
+    }
+  }, [selectedWeekId]);
 
   useEffect(() => {
     void (async () => {
@@ -181,23 +202,78 @@ export function AdminApp() {
     }
   }
 
-  async function cancelBooking(booking: AdminBooking) {
+  async function deleteClient(booking: AdminBooking) {
     const ok = await ask({
-      title: "¿Cancelar reserva?",
-      body: `${booking.clientName} a las ${booking.startTime}. El hueco queda libre.`,
-      confirmLabel: "Cancelar reserva",
-      cancelLabel: "Volver",
+      title: `¿Eliminar a ${booking.clientName}?`,
+      body: `Se libera su hora de las ${booking.startTime}${booking.paid ? " y se pierde su marca de pagado" : ""}.`,
+      confirmLabel: "Eliminar",
     });
     if (!ok) {
       return;
     }
     try {
       await api(`/api/admin/bookings/${booking.id}`, { method: "DELETE" });
+      setClientSheet(null);
       await load();
-      toast("Reserva cancelada");
-    } catch {
-      toast("No se ha podido cancelar.", "warn");
+      toast("Cliente eliminado");
+    } catch (error) {
+      toast(adminErrorCopy(error, "No se ha podido eliminar."), "warn");
     }
+  }
+
+  async function togglePaid(booking: AdminBooking, paid: boolean) {
+    try {
+      await api(`/api/admin/bookings/${booking.id}/paid`, {
+        method: "PUT",
+        body: JSON.stringify({ paid }),
+      });
+      await load();
+    } catch (error) {
+      toast(adminErrorCopy(error, "No se ha podido guardar el pago."), "warn");
+    }
+  }
+
+  // Si falla, el error se enseña dentro de la ficha.
+  async function saveClient(booking: AdminBooking | null, fields: ClientFields) {
+    await api(booking ? `/api/admin/bookings/${booking.id}` : "/api/admin/bookings", {
+      method: booking ? "PATCH" : "POST",
+      body: JSON.stringify(fields),
+    });
+    setClientSheet(null);
+    await load();
+    toast(booking ? "Cambios guardados" : "Cliente añadido");
+  }
+
+  async function swapClients(booking: AdminBooking, other: SwapCandidate) {
+    const ok = await ask({
+      title: "¿Intercambiar las horas?",
+      body: `${booking.clientName} pasa a las ${other.startTime} y ${other.clientName} a las ${booking.startTime}.`,
+      confirmLabel: "Intercambiar",
+    });
+    if (!ok) {
+      return;
+    }
+    try {
+      await api("/api/admin/bookings/swap", {
+        method: "POST",
+        body: JSON.stringify({ bookingA: booking.id, bookingB: other.id }),
+      });
+      setClientSheet(null);
+      await load();
+      toast("Horas intercambiadas");
+    } catch (error) {
+      toast(adminErrorCopy(error, "No se ha podido intercambiar."), "warn");
+    }
+  }
+
+  async function confirmMoveDay(from: string, to: string) {
+    await api("/api/admin/week/days/move", {
+      method: "POST",
+      body: JSON.stringify({ from, to }),
+    });
+    setMoveDay(null);
+    await load();
+    toast("Día movido");
   }
 
   if (!ready) {
@@ -223,6 +299,13 @@ export function AdminApp() {
 
   const totalBookings =
     week?.days.reduce((sum, day) => sum + day.bookings.length, 0) ?? 0;
+  // Semanas pasadas: solo se puede marcar quién ha pagado.
+  const readOnly = Boolean(
+    selectedWeekId && weeks.find((option) => option.id === selectedWeekId)?.isLatest === false,
+  );
+  const openDates = week?.days.filter((day) => day.windows.length > 0).map((day) => day.date) ?? [];
+  const allClients: SwapCandidate[] =
+    week?.days.flatMap((day) => day.bookings.map((booking) => ({ ...booking, date: day.date }))) ?? [];
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
@@ -236,7 +319,36 @@ export function AdminApp() {
         }
       />
 
-        <LinkCard
+        {weeks.length > 1 ? (
+        <div>
+          <label htmlFor="week-select" className="sr-only">
+            Elegir semana
+          </label>
+          <select
+            id="week-select"
+            value={selectedWeekId ?? weeks.find((option) => option.isLatest)?.id ?? ""}
+            onChange={(event) => {
+              const chosen = weeks.find((option) => option.id === event.target.value);
+              setSelectedWeekId(chosen?.isLatest ? null : event.target.value);
+            }}
+            className={`min-h-11 w-full rounded-full border border-brick-edge bg-brick px-4 text-sm text-text touch-manipulation ${focusRing}`}
+          >
+            {weeks.map((option) => (
+              <option key={option.id} value={option.id}>
+                {weekLabel(option)}
+              </option>
+            ))}
+          </select>
+          {readOnly ? (
+            <p className="mt-2 text-sm text-text-dim">
+              Semana pasada: solo puedes marcar quién ha pagado.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {readOnly ? null : (
+      <LinkCard
           link={link}
           canGenerate={Boolean(week)}
           ask={ask}
@@ -245,6 +357,7 @@ export function AdminApp() {
             await load();
           }}
         />
+      )}
 
       {!week ? (
           <Card className="text-center">
@@ -273,9 +386,7 @@ export function AdminApp() {
               <p className="text-sm text-text-dim">
                 {totalBookings === 0
                   ? "Nadie apuntado aún"
-                  : totalBookings === 1
-                    ? "1 persona apuntada"
-                    : `${totalBookings} personas apuntadas`}
+                  : `${week.days.reduce((sum, day) => sum + day.paidCount, 0)} de ${totalBookings} pagados`}
               </p>
             </div>
             {week.days.length > 0 ? (
@@ -313,12 +424,17 @@ export function AdminApp() {
               <DayEditor
                 key={day.date}
                 day={day}
+                readOnly={readOnly}
                 onSave={saveDay}
                 onRemove={() => void removeDay(day)}
-                onCancelBooking={(booking) => void cancelBooking(booking)}
+                onMove={() => setMoveDay({ date: day.date, target: "" })}
+                onAddClient={() => setClientSheet({ booking: null, date: day.date })}
+                onOpenClient={(booking) => setClientSheet({ booking, date: day.date })}
+                onTogglePaid={(booking, paid) => void togglePaid(booking, paid)}
               />
           ))}
 
+          {readOnly ? null : (
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brick-edge/70 bg-night/90 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
             <div className="mx-auto max-w-lg">
               <Button className="w-full" onClick={() => setAddOpen(true)}>
@@ -327,6 +443,7 @@ export function AdminApp() {
               </Button>
             </div>
           </div>
+          )}
 
           {addOpen ? (
             <AddDaySheet
@@ -342,6 +459,46 @@ export function AdminApp() {
           ) : null}
         </>
       )}
+
+      {clientSheet ? (
+        <ClientSheet
+          booking={clientSheet.booking}
+          date={clientSheet.date}
+          openDates={openDates}
+          swapCandidates={allClients.filter(
+            (client) => client.id !== clientSheet.booking?.id,
+          )}
+          onClose={() => setClientSheet(null)}
+          onSave={(fields) => saveClient(clientSheet.booking, fields)}
+          onSwap={(other) => {
+            if (clientSheet.booking) {
+              void swapClients(clientSheet.booking, other);
+            }
+          }}
+          onDelete={() => {
+            if (clientSheet.booking) {
+              void deleteClient(clientSheet.booking);
+            }
+          }}
+        />
+      ) : null}
+
+      {moveDay ? (
+        <MoveDaySheet
+          date={moveDay.date}
+          target={moveDay.target}
+          picker={
+            <DatePicker
+              label="Nueva fecha"
+              value={moveDay.target}
+              onChange={(target) => setMoveDay({ ...moveDay, target })}
+              disabledDates={week?.days.map((day) => day.date) ?? []}
+            />
+          }
+          onClose={() => setMoveDay(null)}
+          onMove={() => confirmMoveDay(moveDay.date, moveDay.target)}
+        />
+      ) : null}
 
       {dialog}
     </main>
@@ -544,14 +701,22 @@ function LinkCard({
 
 function DayEditor({
   day,
+  readOnly,
   onSave,
   onRemove,
-  onCancelBooking,
+  onMove,
+  onAddClient,
+  onOpenClient,
+  onTogglePaid,
 }: {
   day: AdminDay;
+  readOnly: boolean;
   onSave: (date: string, windows: WindowRow[]) => Promise<boolean>;
   onRemove: () => void;
-  onCancelBooking: (booking: AdminBooking) => void;
+  onMove: () => void;
+  onAddClient: () => void;
+  onOpenClient: (booking: AdminBooking) => void;
+  onTogglePaid: (booking: AdminBooking, paid: boolean) => void;
 }) {
   // Clave por contenido: un refresco en tiempo real con las mismas franjas
   // no pisa lo que Raúl está editando.
@@ -574,7 +739,7 @@ function DayEditor({
 
   const dirty = JSON.stringify(windows) !== originalKey;
   const error = dirty ? windowsError(windows) : "";
-  const lost = dirty && !error ? bookingsOutside(day.bookings, windows) : [];
+  const lost = dirty && !error ? bookingsLost(day.bookings, original, windows) : [];
 
   function update(index: number, patch: Partial<WindowRow>) {
     setWindows(
@@ -609,46 +774,46 @@ function DayEditor({
           <p className="text-sm text-text-dim">
             {day.bookings.length === 0
               ? "Nadie apuntado"
-              : day.bookings.length === 1
-                ? "1 persona apuntada"
-                : `${day.bookings.length} personas apuntadas`}
+              : `${day.paidCount} de ${day.bookings.length} pagados`}
           </p>
         </div>
-        <IconButton
-          label="Opciones del día"
-          className="-mt-1 -mr-2"
-          onClick={() => setMenuOpen(true)}
-        >
-          <Icon name="more" />
-        </IconButton>
+        {readOnly ? null : (
+          <IconButton
+            label="Opciones del día"
+            className="-mt-1 -mr-2"
+            onClick={() => setMenuOpen(true)}
+          >
+            <Icon name="more" />
+          </IconButton>
+        )}
       </div>
 
       {day.bookings.length > 0 ? (
         <ul className="mt-3 divide-y divide-brick-edge/60 border-y border-brick-edge/60">
           {day.bookings.map((booking) => (
-            <li key={booking.id} className="flex items-center gap-3 py-1.5">
-              <span className="w-[5.5rem] shrink-0 text-sm tabular-hours text-text-dim">
-                {booking.startTime}–{booking.endTime}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">
-                  {booking.clientName}
-                </span>
-                <span className="block text-xs text-text-dim">
-                  {serviceName(booking.serviceId)}
-                </span>
-              </span>
-              <IconButton
-                label={`Cancelar reserva de ${booking.clientName}`}
-                className="-mr-2 text-neon-orange/80 hover:text-neon-orange"
-                onClick={() => onCancelBooking(booking)}
-              >
-                <Icon name="trash" />
-              </IconButton>
-            </li>
+            <ClientRow
+              key={booking.id}
+              booking={booking}
+              readOnly={readOnly}
+              onTogglePaid={(paid) => onTogglePaid(booking, paid)}
+              onOpen={() => onOpenClient(booking)}
+            />
           ))}
         </ul>
       ) : null}
+
+      {readOnly ? null : (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-3 w-full"
+            type="button"
+            onClick={onAddClient}
+          >
+            <Icon name="plus" className="size-4" />
+            Añadir cliente
+          </Button>
 
       <h4 className="mt-4 text-sm font-semibold text-text">Horario del día</h4>
       <div className="mt-2 space-y-2">
@@ -732,11 +897,24 @@ function DayEditor({
         </div>
       ) : null}
 
+        </>
+      )}
+
       {menuOpen ? (
         <Sheet
           title={capitalize(formatDay(day.date))}
           onClose={() => setMenuOpen(false)}
         >
+          <Button
+            variant="ghost"
+            className="mb-2 w-full"
+            onClick={() => {
+              setMenuOpen(false);
+              onMove();
+            }}
+          >
+            Mover a otro día
+          </Button>
           <Button
             variant="danger"
             className="w-full"
