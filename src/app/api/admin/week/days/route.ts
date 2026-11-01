@@ -1,29 +1,10 @@
 import { createServiceClient } from "@/db/client";
+import { latestWeekId } from "@/server/admin-latest-week";
 import { requireAdmin } from "@/server/admin-session";
 import { windowsToRpcPayload, type WindowInput } from "@/server/admin-week";
 import { jsonEmpty, jsonError, jsonOk } from "@/server/http";
 import { rpcErrorToResponse } from "@/server/rpc";
 
-
-async function latestWeekId() {
-  const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("weeks")
-    .select("id")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    return { error: jsonError("INTERNAL_ERROR", 500) as Response };
-  }
-
-  if (!data) {
-    return { error: jsonError("NOT_FOUND", 404) as Response };
-  }
-
-  return { weekId: data.id as string };
-}
 
 export async function PUT(request: Request) {
   const unauthorized = await requireAdmin();

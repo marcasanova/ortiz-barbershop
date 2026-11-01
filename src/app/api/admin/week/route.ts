@@ -24,19 +24,19 @@ export async function POST() {
   return jsonOk({ id: data.id }, 201);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const unauthorized = await requireAdmin();
   if (unauthorized) {
     return unauthorized;
   }
 
   const supabase = createServiceClient();
-  const { data: week, error: weekError } = await supabase
-    .from("weeks")
-    .select("id, public_token, is_active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const requestedId = new URL(request.url).searchParams.get("id");
+  const weekQuery = supabase.from("weeks").select("id, public_token, is_active");
+  const { data: week, error: weekError } = await (requestedId
+    ? weekQuery.eq("id", requestedId)
+    : weekQuery.order("created_at", { ascending: false }).limit(1)
+  ).maybeSingle();
 
   if (weekError) {
     return jsonError("INTERNAL_ERROR", 500);

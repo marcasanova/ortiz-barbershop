@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapAdminWeek, windowsToRpcPayload } from "./admin-week";
+import { mapAdminWeek, mapWeekList, windowsToRpcPayload } from "./admin-week";
 
 describe("windowsToRpcPayload", () => {
   it("pasa de camelCase a snake_case para la RPC", () => {
@@ -98,5 +98,34 @@ describe("mapAdminWeek", () => {
 
     expect(mapped.hasPublicToken).toBe(false);
     expect(mapped.days).toEqual([]);
+  });
+});
+
+describe("mapWeekList", () => {
+  it("ordena de la más nueva a la más vieja con su rango de fechas", () => {
+    const list = mapWeekList(
+      [
+        { id: "new", is_active: true, created_at: "2026-11-01T10:00:00Z" },
+        { id: "old", is_active: false, created_at: "2026-10-20T10:00:00Z" },
+      ],
+      [
+        { week_id: "old", date: "2026-10-21" },
+        { week_id: "old", date: "2026-10-20" },
+        { week_id: "new", date: "2026-11-06" },
+      ],
+    );
+
+    expect(list).toEqual([
+      { id: "new", isActive: true, isLatest: true, firstDate: "2026-11-06", lastDate: "2026-11-06" },
+      { id: "old", isActive: false, isLatest: false, firstDate: "2026-10-20", lastDate: "2026-10-21" },
+    ]);
+  });
+
+  it("una semana sin días no tiene fechas", () => {
+    const [week] = mapWeekList(
+      [{ id: "w", is_active: false, created_at: "2026-11-01T10:00:00Z" }],
+      [],
+    );
+    expect(week).toMatchObject({ firstDate: null, lastDate: null, isLatest: true });
   });
 });

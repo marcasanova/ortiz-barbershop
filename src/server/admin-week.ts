@@ -68,3 +68,28 @@ export function mapAdminWeek(params: {
     }),
   };
 }
+
+export type WeekListRow = { id: string; is_active: boolean; created_at: string };
+
+/** Semanas para el selector de Raúl, de la más nueva a la más vieja. */
+export function mapWeekList(
+  weeks: WeekListRow[],
+  windows: { week_id: string; date: string }[],
+) {
+  const sorted = [...weeks].sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  return sorted.map((week, index) => {
+    const dates = windows
+      .filter((window) => window.week_id === week.id)
+      .map((window) => window.date)
+      .sort();
+
+    return {
+      id: week.id,
+      isActive: week.is_active,
+      isLatest: index === 0,
+      firstDate: dates[0] ?? null,
+      lastDate: dates.at(-1) ?? null,
+    };
+  });
+}
